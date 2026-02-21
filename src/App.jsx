@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   ComposedChart, LineChart, Line, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -328,9 +328,19 @@ function InfoBlock({ title, children, T, defaultOpen = false }) {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(
+    () => window.matchMedia("(prefers-color-scheme: dark)").matches
+  );
   const [showInfo, setShowInfo] = useState(false);
   const T = darkMode ? DARK : LIGHT;
+
+  // Follow system theme changes
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e) => setDarkMode(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   // Inputs
   const [startEtf,       setStartEtf]       = useState(80000);
