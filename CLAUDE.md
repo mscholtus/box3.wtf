@@ -12,8 +12,8 @@ Box 3 Calculator (box3.wtf) - A Dutch tax calculator comparing the "forfaitair" 
 ## Tech Stack
 
 - **React 18** with Vite
+- **Tailwind CSS** for styling (with custom `mist` color palette)
 - **Recharts** for data visualization
-- **No CSS framework** - inline styles with theme objects
 - **No state management library** - React useState with URL state sharing
 
 ## Commands
@@ -37,9 +37,10 @@ src/
 ├── constants/
 │   └── tax.js       # Tax rates, thresholds, simulation defaults
 ├── hooks/
-│   └── useSimulation.js  # Simulation logic and Monte Carlo
+│   └── useSimulation.js  # Simulation logic (and Monte Carlo - currently disabled)
 └── utils/
     ├── format.js    # Number formatting (€1.2M, €50K)
+    ├── shareState.js # URL state encoding/decoding
     └── tax.js       # Tax calculation functions, RNG
 ```
 
@@ -47,7 +48,7 @@ src/
 
 - **`src/App.jsx`** - Main app with state management, routing, theme
 - **`src/constants/tax.js`** - All tax constants (rates, thresholds)
-- **`src/hooks/useSimulation.js`** - `simulate()` and `runMonteCarlo()` functions
+- **`src/hooks/useSimulation.js`** - `simulate()` function (and `runMonteCarlo()` for future use)
 - **`src/utils/tax.js`** - `calcTax()`, `payTax()`, seeded RNG functions
 
 ### Code Splitting
@@ -71,23 +72,22 @@ const werkelijk = etfGrowth + cryptoGrowth + spaarGrowth;
 const belasting = Math.max(0, werkelijk - heffingsvrijInkomen) * 0.36;
 ```
 
-### Monte Carlo Simulation
-- 1000 simulations with seeded PRNG (Mulberry32)
-- Normal distribution around expected returns
-- Volatility: ETF 15%, Crypto 40%, Savings 0.5%
-- Return floor: -60% per year
-- Only runs when `advancedMode` is enabled
-
 ## Theming
 
-Two themes defined in `App.jsx`: light and dark. Theme follows system preference by default. All colors referenced via `theme.{property}` (e.g., `theme.text`, `theme.accent`, `theme.card`).
+Dark mode support via Tailwind's `dark:` prefix. Theme follows system preference by default, with manual toggle. Custom colors defined in `tailwind.config.js`:
+- `mist-50` to `mist-950` - grayscale palette
+- `accent` - orange highlight color
+- `forfaitair` - blue for forfaitair system
+- `werkelijk` - green for werkelijk system
 
 ## URL State
 
-Calculator state is encoded in URL hash for sharing:
+Calculator state is encoded in URL query parameter for sharing:
 ```
-https://box3.wtf/#etf=50000&crypto=5000&spaar=25000&...
+https://box3.wtf/?d=<base64-encoded-state>
 ```
+
+State includes: asset values, contributions, returns, jaren, fiscaalPartner, betaalUitSpaar.
 
 ## Important Notes
 
@@ -96,9 +96,34 @@ https://box3.wtf/#etf=50000&crypto=5000&spaar=25000&...
 - The "werkelijk rendement" law is pending Eerste Kamer approval
 - All calculations run client-side; no data is sent to servers
 
-## Backlog: Historical Backtests
+---
 
-**Goal**: Add backtest mode alongside Monte Carlo to show tax impact during real historical events (2008 crash, dot-com, COVID). More tangible than random simulations because users lived through these events.
+## Backlog
+
+### 1. Monte Carlo Simulations (code exists, UI disabled)
+
+**Status**: Code implemented in `useSimulation.js`, but UI path removed. Need to design intuitive presentation.
+
+**Challenge**: Showing probabilistic outcomes without confusing users. Previous implementation had issues:
+- Selecting a specific percentile scenario defeats the purpose of MC
+- P50(werkelijk - forfaitair) ≠ P50(werkelijk) - P50(forfaitair)
+- Range visualizations were complex
+
+**Existing code**:
+- `generateMCScenarios()` - generates 1000 random return scenarios
+- `runMonteCarlo()` - runs simulation across all scenarios
+- `runPairedMonteCarlo()` - computes true median of differences (proper A/B testing)
+- Seeded PRNG (Mulberry32) for reproducible results
+
+**Design considerations for future**:
+- Show confidence bands on charts rather than single lines
+- Focus on probability statements: "In 80% of scenarios, werkelijk costs more"
+- Use paired differences to show true comparison
+- Consider simplified "optimistic/pessimistic/realistic" scenarios instead of full MC
+
+### 2. Historical Backtests
+
+**Goal**: Show tax impact during real historical events (2008 crash, dot-com, COVID). More tangible than random simulations because users lived through these events.
 
 **Implementation approach**:
 1. Create `src/data/historicalReturns.json` with annual returns:
@@ -111,7 +136,7 @@ https://box3.wtf/#etf=50000&crypto=5000&spaar=25000&...
    - Return simulation results with year annotations
 
 3. Dashboard changes:
-   - Add "Backtest" toggle alongside Monte Carlo
+   - Add "Backtest" toggle or tab
    - Dropdown to select start year (1995, 2000, 2007, 2010, etc.)
    - Annotate chart with crisis events (vertical lines + labels)
    - Show specific impact: "2008: ETF -38%, tax €X vs forfaitair €Y"
@@ -132,3 +157,13 @@ https://box3.wtf/#etf=50000&crypto=5000&spaar=25000&...
 - Start year matters significantly - 2007 vs 2009 start = very different outcomes
 - Could show "worst case start year" analysis automatically
 - Historical forfaitair rates also changed - may need to use current rates for fair comparison
+
+### 3. Intuitive Scenario Presentation (combines MC + Backtests)
+
+**Goal**: Present both Monte Carlo and historical backtests in a unified, intuitive way.
+
+**Ideas**:
+- "What if" scenarios: "What if 2008 happens again?", "What if markets return 7% annually?"
+- Risk tolerance selector: Conservative/Moderate/Aggressive affects displayed scenarios
+- Side-by-side comparison mode: Show deterministic vs historical vs MC ranges
+- Key insight summary: "In bear markets, werkelijk saves you €X. In bull markets, it costs €Y."
