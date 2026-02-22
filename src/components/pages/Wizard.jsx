@@ -59,8 +59,8 @@ function WizardInput({ label, hint, value, onChange, step = 1000 }) {
           }}
           className={clsx(
             "w-full py-4 px-4 pl-9",
-            "bg-mist-100 dark:bg-mist-800",
-            "border-2 border-mist-200 dark:border-mist-700",
+            "bg-white dark:bg-mist-800",
+            "border-2 border-mist-300 dark:border-mist-700",
             "rounded-xl text-xl text-mist-950 dark:text-mist-50",
             "outline-none transition-colors",
             "focus:border-accent"
