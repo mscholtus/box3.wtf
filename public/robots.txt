@@ -1,0 +1,5 @@
+# box3.wtf robots.txt
+User-agent: *
+Allow: /
+
+Sitemap: https://box3.wtf/sitemap.xml

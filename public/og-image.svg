@@ -1,0 +1,44 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#060b14"/>
+      <stop offset="100%" style="stop-color:#0d1520"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative elements -->
+  <circle cx="1100" cy="100" r="200" fill="#f97316" opacity="0.1"/>
+  <circle cx="100" cy="530" r="150" fill="#3b82f6" opacity="0.1"/>
+
+  <!-- Top branding -->
+  <rect x="475" y="50" width="250" height="60" rx="12" fill="#f97316"/>
+  <text x="600" y="92" font-family="system-ui, sans-serif" font-size="32" fill="#ffffff" text-anchor="middle" font-weight="800">
+    box3.wtf
+  </text>
+
+  <!-- Main content -->
+  <text x="600" y="200" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="#ffffff" text-anchor="middle">
+    Box 3 Calculator
+  </text>
+
+  <text x="600" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="#94a3b8" text-anchor="middle">
+    Forfaitair 2027 vs Werkelijk 2028+
+  </text>
+
+  <!-- Comparison boxes -->
+  <rect x="200" y="340" width="350" height="140" rx="16" fill="#1e293b"/>
+  <text x="375" y="390" font-family="system-ui, sans-serif" font-size="18" fill="#3b82f6" text-anchor="middle" font-weight="700">FORFAITAIR</text>
+  <text x="375" y="440" font-family="system-ui, sans-serif" font-size="36" fill="#ffffff" text-anchor="middle" font-weight="800">6% fictief</text>
+
+  <rect x="650" y="340" width="350" height="140" rx="16" fill="#1e293b"/>
+  <text x="825" y="390" font-family="system-ui, sans-serif" font-size="18" fill="#a855f7" text-anchor="middle" font-weight="700">WERKELIJK</text>
+  <text x="825" y="440" font-family="system-ui, sans-serif" font-size="36" fill="#ffffff" text-anchor="middle" font-weight="800">36% belast</text>
+
+  <!-- VS badge -->
+  <circle cx="600" cy="410" r="35" fill="#f97316"/>
+  <text x="600" y="420" font-family="system-ui, sans-serif" font-size="24" fill="#ffffff" text-anchor="middle" font-weight="800">VS</text>
+
+</svg>
