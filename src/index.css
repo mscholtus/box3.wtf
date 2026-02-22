@@ -1,0 +1,85 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Familjen Grotesk', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  /* Oatmeal Mist palette */
+  --color-mist-50: oklch(98.7% 0.002 197.1);
+  --color-mist-100: oklch(96.3% 0.002 197.1);
+  --color-mist-200: oklch(92.5% 0.005 214.3);
+  --color-mist-300: oklch(87.2% 0.007 219.6);
+  --color-mist-400: oklch(72.3% 0.014 214.4);
+  --color-mist-500: oklch(56% 0.021 213.5);
+  --color-mist-600: oklch(45% 0.017 213.2);
+  --color-mist-700: oklch(37.8% 0.015 216);
+  --color-mist-800: oklch(27.5% 0.011 216.9);
+  --color-mist-900: oklch(21.8% 0.008 223.9);
+  --color-mist-950: oklch(14.8% 0.004 228.8);
+
+  /* Brand colors */
+  --color-forfaitair: #3b82f6;
+  --color-werkelijk: #10b981;
+  --color-accent: #f97316;
+  --color-accent-dark: #ea6c00;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    --scroll-padding-top: 0;
+    scroll-padding-top: var(--scroll-padding-top);
+  }
+
+  body {
+    @apply bg-mist-100 text-mist-950 dark:bg-mist-950 dark:text-mist-100;
+    @apply font-sans;
+    @apply transition-colors duration-200;
+  }
+
+  /* Range input styling */
+  input[type="range"] {
+    @apply appearance-none bg-transparent cursor-pointer;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    @apply h-1.5 rounded-full;
+    background-color: var(--color-mist-300);
+  }
+
+  .dark input[type="range"]::-webkit-slider-runnable-track {
+    background-color: var(--color-mist-700);
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full bg-accent -mt-[5px];
+    @apply shadow-sm;
+  }
+
+  input[type="range"]::-moz-range-track {
+    @apply h-1.5 rounded-full;
+    background-color: var(--color-mist-300);
+  }
+
+  .dark input[type="range"]::-moz-range-track {
+    background-color: var(--color-mist-700);
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    @apply w-4 h-4 rounded-full bg-accent border-none;
+    @apply shadow-sm;
+  }
+
+  /* Hide number input spinners */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
