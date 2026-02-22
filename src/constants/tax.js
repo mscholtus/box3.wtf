@@ -32,6 +32,7 @@ export const DEFAULT_START_SPAAR = 25000;
 export const DEFAULT_START_PENSIOEN = 20000;
 export const DEFAULT_BIJ_ETF = 3000;
 export const DEFAULT_BIJ_CRYPTO = 0;
+export const DEFAULT_BIJ_SPAAR = 0;
 export const DEFAULT_BIJ_PENSIOEN = 2000;
 export const DEFAULT_FISCAAL_PARTNER = false;
 export const DEFAULT_BETAAL_UIT_SPAAR = true;

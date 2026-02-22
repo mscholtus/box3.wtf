@@ -6,27 +6,23 @@ import {
   DEFAULT_REND_ETF,
   DEFAULT_REND_CRYPTO,
   DEFAULT_REND_SPAAR,
-  DEFAULT_VOL_ETF,
-  DEFAULT_VOL_CRYPTO,
   DEFAULT_START_ETF,
   DEFAULT_START_CRYPTO,
   DEFAULT_START_SPAAR,
   DEFAULT_START_PENSIOEN,
   DEFAULT_BIJ_ETF,
   DEFAULT_BIJ_CRYPTO,
+  DEFAULT_BIJ_SPAAR,
   DEFAULT_BIJ_PENSIOEN,
   DEFAULT_FISCAAL_PARTNER,
   DEFAULT_BETAAL_UIT_SPAAR,
-  DEFAULT_ADVANCED_MODE,
-  DEFAULT_MC_SEED,
 } from "./constants/tax";
 
 // Hooks
 import { useTheme } from "./hooks/useTheme";
-import { simulate, runMonteCarlo } from "./hooks/useSimulation";
+import { simulate } from "./hooks/useSimulation";
 
 // Utils
-import { resetSessionSeed, setSessionSeed } from "./utils/tax";
 import { readStateFromUrl, getShareUrl, encodeState, copyToClipboard } from "./utils/shareState";
 
 // Page Components (non-lazy)
@@ -58,12 +54,6 @@ export default function App() {
   const [urlState] = useState(() => readStateFromUrl());
   const hasUrlState = urlState !== null;
 
-  // Initialize RNG seed synchronously (must happen before MC useMemo hooks run)
-  // Using useState initializer to ensure it runs exactly once before render
-  useState(() => {
-    setSessionSeed(urlState?.mcSeed ?? DEFAULT_MC_SEED);
-  });
-
   // View state - go directly to dashboard if URL has state
   const [view, setView] = useState(hasUrlState ? "dashboard" : "landing");
   const [previousView, setPreviousView] = useState("landing");
@@ -85,6 +75,7 @@ export default function App() {
   // Contribution inputs
   const [bijEtf, setBijEtf] = useState(urlState?.bijEtf ?? DEFAULT_BIJ_ETF);
   const [bijCrypto, setBijCrypto] = useState(urlState?.bijCrypto ?? DEFAULT_BIJ_CRYPTO);
+  const [bijSpaar, setBijSpaar] = useState(urlState?.bijSpaar ?? DEFAULT_BIJ_SPAAR);
   const [bijPensioen, setBijPensioen] = useState(urlState?.bijPensioen ?? DEFAULT_BIJ_PENSIOEN);
 
   // Return inputs
@@ -95,29 +86,14 @@ export default function App() {
   // Situation inputs
   const [jaren, setJaren] = useState(urlState?.jaren ?? DEFAULT_JAREN);
   const [fiscaalPartner, setFiscaalPartner] = useState(urlState?.fiscaalPartner ?? DEFAULT_FISCAAL_PARTNER);
-  const [betaalUitSpaar, setBetaalUitSpaar] = useState(urlState?.betaalUitSpaar ?? DEFAULT_BETAAL_UIT_SPAAR);
+  const [betaalUitSpaar] = useState(urlState?.betaalUitSpaar ?? DEFAULT_BETAAL_UIT_SPAAR);
 
-  // Advanced mode settings
-  const [advancedMode, setAdvancedMode] = useState(urlState?.advancedMode ?? DEFAULT_ADVANCED_MODE);
-  const [volEtf, setVolEtf] = useState(urlState?.volEtf ?? DEFAULT_VOL_ETF);
-  const [volCrypto, setVolCrypto] = useState(urlState?.volCrypto ?? DEFAULT_VOL_CRYPTO);
-  const [mcPercentile, setMcPercentile] = useState(50);
-  const [mcSeed, setMcSeed] = useState(urlState?.mcSeed ?? DEFAULT_MC_SEED);
-
-
-  // Generate new Monte Carlo simulation with new random seed
-  const regenerateMC = () => {
-    const newSeed = resetSessionSeed();
-    setMcSeed(newSeed);
-  };
-
-  // Share current state (including mcSeed for reproducible MC)
+  // Share current state
   const shareState = {
     startEtf, startCrypto, startSpaar, startPensioen,
-    bijEtf, bijCrypto, bijPensioen,
+    bijEtf, bijCrypto, bijSpaar, bijPensioen,
     rendEtf, rendCrypto, rendSpaar,
     jaren, fiscaalPartner, betaalUitSpaar,
-    advancedMode, volEtf, volCrypto, mcSeed,
   };
 
   const handleShare = async () => {
@@ -147,7 +123,7 @@ export default function App() {
   // Simulation parameters object
   const params = {
     startEtf, startCrypto, startSpaar, startPensioen,
-    bijEtf, bijCrypto, bijPensioen,
+    bijEtf, bijCrypto, bijSpaar, bijPensioen,
     rendEtf, rendCrypto, rendSpaar,
     jaren, fiscaalPartner,
   };
@@ -156,23 +132,14 @@ export default function App() {
   // Run simulations (only when on dashboard to avoid unnecessary computation)
   const fMet = useMemo(
     () => view === "dashboard" ? simulate(params, "forfaitair", true, betaalUitSpaar, null) : { data: [] },
-    [view === "dashboard" ? paramsKey : null, betaalUitSpaar, view]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [paramsKey, betaalUitSpaar, view]
   );
 
   const wMet = useMemo(
     () => view === "dashboard" ? simulate(params, "werkelijk", true, betaalUitSpaar, null) : { data: [] },
-    [view === "dashboard" ? paramsKey : null, betaalUitSpaar, view]
-  );
-
-  // Monte Carlo for both tax systems (only when advancedMode is on)
-  const mcKeyBase = JSON.stringify({ paramsKey, betaalUitSpaar, volEtf, volCrypto, mcSeed });
-  const mcDataForfaitair = useMemo(
-    () => (view === "dashboard" && advancedMode) ? runMonteCarlo(params, "forfaitair", betaalUitSpaar, volEtf, volCrypto) : [],
-    [(view === "dashboard" && advancedMode) ? mcKeyBase : null, view, advancedMode]
-  );
-  const mcDataWerkelijk = useMemo(
-    () => (view === "dashboard" && advancedMode) ? runMonteCarlo(params, "werkelijk", betaalUitSpaar, volEtf, volCrypto) : [],
-    [(view === "dashboard" && advancedMode) ? mcKeyBase : null, view, advancedMode]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [paramsKey, betaalUitSpaar, view]
   );
 
   // Common page wrapper class (body handles bg/text via CSS)
@@ -220,15 +187,14 @@ export default function App() {
           startCrypto={startCrypto} setStartCrypto={setStartCrypto}
           bijCrypto={bijCrypto} setBijCrypto={setBijCrypto}
           startSpaar={startSpaar} setStartSpaar={setStartSpaar}
+          bijSpaar={bijSpaar} setBijSpaar={setBijSpaar}
           startPensioen={startPensioen} setStartPensioen={setStartPensioen}
           bijPensioen={bijPensioen} setBijPensioen={setBijPensioen}
-          rendEtf={rendEtf} setRendEtf={setRendEtf}
-          rendCrypto={rendCrypto} setRendCrypto={setRendCrypto}
-          rendSpaar={rendSpaar} setRendSpaar={setRendSpaar}
+          rendEtf={rendEtf}
+          rendCrypto={rendCrypto}
+          rendSpaar={rendSpaar}
           jaren={jaren} setJaren={setJaren}
           fiscaalPartner={fiscaalPartner} setFiscaalPartner={setFiscaalPartner}
-          advancedMode={advancedMode} setAdvancedMode={setAdvancedMode}
-          theme={theme}
         />
       </div>
     );
@@ -264,21 +230,11 @@ export default function App() {
       <Suspense fallback={<DashboardLoader />}>
         <Dashboard
           jaren={jaren}
+          bijPensioen={bijPensioen}
           fiscaalPartner={fiscaalPartner}
           setFiscaalPartner={setFiscaalPartner}
-          advancedMode={advancedMode}
-          setAdvancedMode={setAdvancedMode}
-          mcPercentile={mcPercentile}
-          setMcPercentile={setMcPercentile}
-          volEtf={volEtf}
-          setVolEtf={setVolEtf}
-          volCrypto={volCrypto}
-          setVolCrypto={setVolCrypto}
           fMet={fMet}
           wMet={wMet}
-          mcDataForfaitair={mcDataForfaitair}
-          mcDataWerkelijk={mcDataWerkelijk}
-          regenerateMC={regenerateMC}
           handleShare={handleShare}
           showCopied={showCopied}
           goToInfo={goToInfo}

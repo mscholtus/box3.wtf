@@ -94,38 +94,67 @@ export function calcFirstYearTax(assets, fiscaalPartner) {
  * @param {boolean} betaalUitSpaar - Pay from savings first
  * @param {number} bijEtf - ETF contribution
  * @param {number} bijCrypto - Crypto contribution
- * @returns {Object} Updated values
+ * @param {number} bijPensioen - Pension contribution (also reduced when paying tax)
+ * @returns {Object} Updated values including source breakdown
  */
-export function payTax(etf, crypto, spaar, belasting, betaalUitSpaar, bijEtf, bijCrypto) {
+export function payTax(etf, crypto, spaar, belasting, betaalUitSpaar, bijEtf, bijCrypto, bijPensioen = 0, bijSpaar = 0) {
   let rem = belasting;
   let spaarUitgeput = false;
   let invVerkocht = false;
   let bijEtfRest = bijEtf;
   let bijCryptoRest = bijCrypto;
+  let bijPensioenRest = bijPensioen;
+  let bijSpaarRest = bijSpaar;
+
+  // Track where tax payment came from
+  let uitSpaar = 0;          // Existing savings + savings contributions
+  let uitBijdragen = 0;      // ETF + crypto contributions reduced
+  let uitPensioen = 0;       // Pension contributions reduced
+  let uitInvestments = 0;    // Sold investments
 
   if (rem <= 0) {
-    return { etf, crypto, spaar, bijEtfRest, bijCryptoRest, spaarUitgeput, invVerkocht };
+    return { etf, crypto, spaar, bijEtfRest, bijCryptoRest, bijPensioenRest, bijSpaarRest, spaarUitgeput, invVerkocht, uitSpaar, uitBijdragen, uitPensioen, uitInvestments };
   }
 
   if (betaalUitSpaar) {
-    // Pay from savings first
+    // Pay from existing savings first
     if (spaar >= rem) {
       spaar -= rem;
+      uitSpaar = rem;
       rem = 0;
     } else {
+      uitSpaar = spaar;
       rem -= spaar;
       spaar = 0;
+    }
+
+    // Then use savings contribution
+    if (rem > 0 && bijSpaarRest > 0) {
+      const fromBijSpaar = Math.min(rem, bijSpaarRest);
+      bijSpaarRest -= fromBijSpaar;
+      uitSpaar += fromBijSpaar;
+      rem -= fromBijSpaar;
+      if (bijSpaarRest === 0 && spaar === 0) {
+        spaarUitgeput = true;
+      }
+    } else if (spaar === 0 && bijSpaarRest === 0) {
       spaarUitgeput = true;
     }
 
-    // Then reduce contributions
+    // Then reduce investment contributions (ETF, crypto, pension) proportionally
     if (rem > 0) {
-      const totalBij = bijEtfRest + bijCryptoRest;
+      const totalBij = bijEtfRest + bijCryptoRest + bijPensioenRest;
       if (totalBij > 0) {
         const absorb = Math.min(rem, totalBij);
         const f = absorb / totalBij;
+        // Track pension separately from ETF/crypto contributions
+        const pensionReduction = bijPensioenRest * f;
+        const otherReduction = (bijEtfRest + bijCryptoRest) * f;
         bijEtfRest = Math.max(0, bijEtfRest - bijEtfRest * f);
         bijCryptoRest = Math.max(0, bijCryptoRest - bijCryptoRest * f);
+        bijPensioenRest = Math.max(0, bijPensioenRest - bijPensioenRest * f);
+        uitBijdragen = otherReduction;
+        uitPensioen = pensionReduction;
         rem -= absorb;
       }
     }
@@ -134,9 +163,12 @@ export function payTax(etf, crypto, spaar, belasting, betaalUitSpaar, bijEtf, bi
     if (rem > 0) {
       invVerkocht = true;
       const totInv = etf + crypto;
+      const actualFromInv = Math.min(rem, totInv);
+      uitInvestments = actualFromInv;
       if (totInv > 0) {
-        etf = Math.max(0, etf - rem * (etf / totInv));
-        crypto = Math.max(0, crypto - rem * (crypto / totInv));
+        const sellFactor = actualFromInv / totInv;
+        etf = Math.max(0, etf * (1 - sellFactor));
+        crypto = Math.max(0, crypto * (1 - sellFactor));
       }
     }
   } else {
@@ -144,13 +176,18 @@ export function payTax(etf, crypto, spaar, belasting, betaalUitSpaar, bijEtf, bi
     const box3 = etf + crypto + spaar;
     if (box3 > 0) {
       const f = 1 - Math.min(rem / box3, 1);
+      // Track proportional amounts
+      const spaarPaid = spaar - spaar * f;
+      const invPaid = (etf + crypto) - (etf + crypto) * f;
+      uitSpaar = spaarPaid;
+      uitInvestments = invPaid;
       etf *= f;
       crypto *= f;
       spaar *= f;
     }
   }
 
-  return { etf, crypto, spaar, bijEtfRest, bijCryptoRest, spaarUitgeput, invVerkocht };
+  return { etf, crypto, spaar, bijEtfRest, bijCryptoRest, bijPensioenRest, bijSpaarRest, spaarUitgeput, invVerkocht, uitSpaar, uitBijdragen, uitPensioen, uitInvestments };
 }
 
 /**

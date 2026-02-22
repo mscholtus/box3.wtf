@@ -219,23 +219,21 @@ export function Wizard({
   step, setStep, onComplete, onBack,
   startEtf, setStartEtf, bijEtf, setBijEtf,
   startCrypto, setStartCrypto, bijCrypto, setBijCrypto,
-  startSpaar, setStartSpaar,
+  startSpaar, setStartSpaar, bijSpaar, setBijSpaar,
   startPensioen, setStartPensioen, bijPensioen, setBijPensioen,
   rendEtf, rendCrypto, rendSpaar,
   jaren, setJaren, fiscaalPartner, setFiscaalPartner,
-  advancedMode, setAdvancedMode,
 }) {
-  const totalSteps = 7;
+  const totalSteps = 6;
   const progress = (step / totalSteps) * 100;
 
   const stepConfig = {
     1: { icon: "📈", title: "ETFs / Aandelen", description: "Hoeveel heb je belegd in ETFs of aandelen, en hoeveel leg je jaarlijks in?" },
     2: { icon: "🪙", title: "Crypto", description: "Hoeveel heb je in cryptocurrency, en hoeveel leg je jaarlijks bij?" },
-    3: { icon: "💶", title: "Spaargeld", description: "Hoeveel spaargeld heb je op je spaarrekening(en)?" },
-    4: { icon: "🏦", title: "Pensioenbeleggen", description: "Hoeveel heb je belegd via pensioenbeleggen? Dit vermogen is vrijgesteld van box 3." },
+    3: { icon: "💶", title: "Spaargeld", description: "Hoeveel spaargeld heb je op je spaarrekening(en), en hoeveel spaar je jaarlijks bij?" },
+    4: { icon: "🏦", title: "Pensioenbeleggen", description: "Hoeveel heb je zelf belegd via pensioenbeleggen (zoals Brand New Day, Meesman)? Dit is vrijgesteld van box 3. Werkgeverspensioen telt hier niet mee." },
     5: { icon: "📊", title: "Eerste jaar verschil", description: "Dit is het verschil in belasting voor het eerste jaar, op basis van je vermogen." },
     6: { icon: "⏱️", title: "Tijdshorizon", description: "Over hoeveel jaar wil je het verschil berekenen?" },
-    7: { icon: "🎯", title: "Berekeningswijze", description: "Kies hoe gedetailleerd je de resultaten wilt zien." },
   };
 
   const config = stepConfig[step];
@@ -246,7 +244,7 @@ export function Wizard({
   const handleSkip = () => {
     if (step === 1) { setStartEtf(0); setBijEtf(0); }
     if (step === 2) { setStartCrypto(0); setBijCrypto(0); }
-    if (step === 3) { setStartSpaar(0); }
+    if (step === 3) { setStartSpaar(0); setBijSpaar(0); }
     if (step === 4) { setStartPensioen(0); setBijPensioen(0); }
     handleNext();
   };
@@ -306,7 +304,10 @@ export function Wizard({
           )}
 
           {step === 3 && (
-            <WizardInput label="Spaargeld" value={startSpaar} onChange={setStartSpaar} />
+            <>
+              <WizardInput label="Huidig spaargeld" value={startSpaar} onChange={setStartSpaar} />
+              <WizardInput label="Jaarlijkse inleg" value={bijSpaar} onChange={setBijSpaar} step={500} />
+            </>
           )}
 
           {step === 4 && (
@@ -383,61 +384,6 @@ export function Wizard({
               />
             </>
           )}
-
-          {step === 7 && (
-            <div className="flex flex-col gap-4">
-              <button
-                onClick={() => setAdvancedMode(false)}
-                className={clsx(
-                  "p-6 rounded-2xl cursor-pointer text-left border-2 transition-colors",
-                  !advancedMode
-                    ? "bg-accent/10 border-accent"
-                    : "bg-white dark:bg-mist-900 border-mist-200 dark:border-mist-700"
-                )}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">📊</span>
-                  <span className={clsx(
-                    "text-lg font-bold",
-                    !advancedMode ? "text-accent" : "text-mist-950 dark:text-mist-50"
-                  )}>
-                    Eenvoudig
-                  </span>
-                  {!advancedMode && (
-                    <span className="text-xs font-bold px-2.5 py-1 bg-accent text-white rounded-full">
-                      Aanbevolen
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm text-mist-500 dark:text-mist-400 leading-relaxed">
-                  Duidelijk overzicht van eindvermogen en belastingverschil. Geschikt voor de meeste situaties.
-                </div>
-              </button>
-
-              <button
-                onClick={() => setAdvancedMode(true)}
-                className={clsx(
-                  "p-6 rounded-2xl cursor-pointer text-left border-2 transition-colors",
-                  advancedMode
-                    ? "bg-accent/10 border-accent"
-                    : "bg-white dark:bg-mist-900 border-mist-200 dark:border-mist-700"
-                )}
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">🎲</span>
-                  <span className={clsx(
-                    "text-lg font-bold",
-                    advancedMode ? "text-accent" : "text-mist-950 dark:text-mist-50"
-                  )}>
-                    Geavanceerd
-                  </span>
-                </div>
-                <div className="text-sm text-mist-500 dark:text-mist-400 leading-relaxed">
-                  Inclusief Monte Carlo simulaties, volatiliteit instellingen, en gedetailleerde scenario-analyse.
-                </div>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Navigation */}
@@ -497,6 +443,8 @@ Wizard.propTypes = {
   setBijCrypto: PropTypes.func.isRequired,
   startSpaar: PropTypes.number.isRequired,
   setStartSpaar: PropTypes.func.isRequired,
+  bijSpaar: PropTypes.number.isRequired,
+  setBijSpaar: PropTypes.func.isRequired,
   startPensioen: PropTypes.number.isRequired,
   setStartPensioen: PropTypes.func.isRequired,
   bijPensioen: PropTypes.number.isRequired,
@@ -508,6 +456,4 @@ Wizard.propTypes = {
   setJaren: PropTypes.func.isRequired,
   fiscaalPartner: PropTypes.bool.isRequired,
   setFiscaalPartner: PropTypes.func.isRequired,
-  advancedMode: PropTypes.bool.isRequired,
-  setAdvancedMode: PropTypes.func.isRequired,
 };
