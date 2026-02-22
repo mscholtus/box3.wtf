@@ -27,7 +27,9 @@ export function simulate(params, stelsel, metBijstorting, betaalUitSpaar, overri
     fiscaalPartner,
   } = params;
 
-  const hv = getHeffingsvrij(stelsel, fiscaalPartner);
+  // Get both thresholds - forfaitair is used for 2027, then switch to actual stelsel
+  const hvForfaitair = getHeffingsvrij('forfaitair', fiscaalPartner);
+  const hvWerkelijk = getHeffingsvrij('werkelijk', fiscaalPartner);
 
   let etf = startEtf;
   let crypto = startCrypto;
@@ -38,7 +40,7 @@ export function simulate(params, stelsel, metBijstorting, betaalUitSpaar, overri
   let verliesVoorraad = 0; // Loss carry-forward (werkelijk only)
 
   const data = [{
-    jaar: 2027,
+    jaar: 2026,
     etf,
     crypto,
     spaar,
@@ -50,6 +52,7 @@ export function simulate(params, stelsel, metBijstorting, betaalUitSpaar, overri
   }];
 
   for (let j = 1; j <= jaren; j++) {
+    const currentYear = 2026 + j;
     const rEtf = overrideReturns ? overrideReturns[j - 1].etf : rendEtf;
     const rCrypto = overrideReturns ? overrideReturns[j - 1].crypto : rendCrypto;
     const rSpaar = overrideReturns ? overrideReturns[j - 1].spaar : rendSpaar;
@@ -59,7 +62,10 @@ export function simulate(params, stelsel, metBijstorting, betaalUitSpaar, overri
     const spaarGr = spaar * Math.max(0, rSpaar);
     const pensioenGr = pensioen * rEtf;
 
-    const taxResult = calcTax(stelsel, etf, crypto, spaar, etfGr, cryptoGr, spaarGr, hv, verliesVoorraad);
+    // 2027 uses forfaitair for both scenarios (werkelijk rendement starts 2028)
+    const effectiveStelsel = currentYear <= 2027 ? 'forfaitair' : stelsel;
+    const effectiveHv = effectiveStelsel === 'forfaitair' ? hvForfaitair : hvWerkelijk;
+    const taxResult = calcTax(effectiveStelsel, etf, crypto, spaar, etfGr, cryptoGr, spaarGr, effectiveHv, verliesVoorraad);
     const belasting = taxResult.belasting;
     verliesVoorraad = taxResult.verliesVoorraadNieuw;
 
@@ -83,7 +89,7 @@ export function simulate(params, stelsel, metBijstorting, betaalUitSpaar, overri
     spaar = paid.spaar;
 
     if (paid.spaarUitgeput && !spaarUitgeputJaar) {
-      spaarUitgeputJaar = 2027 + j;
+      spaarUitgeputJaar = currentYear;
     }
 
     if (metBijstorting) {
@@ -95,7 +101,7 @@ export function simulate(params, stelsel, metBijstorting, betaalUitSpaar, overri
     cumulB += belasting;
 
     data.push({
-      jaar: 2027 + j,
+      jaar: 2026 + j,
       etf: Math.round(etf),
       crypto: Math.round(crypto),
       spaar: Math.round(spaar),
@@ -133,23 +139,52 @@ export function runMonteCarlo(params, stelsel, betaalUitSpaar, volEtf, volCrypto
       crypto: clampReturn(rendCrypto + volCrypto * randn()),
       spaar: Math.max(0, rendSpaar + 0.005 * randn()),
     }));
-    results.push(simulate(params, stelsel, true, betaalUitSpaar, ov).data.map((d) => d.totaal));
+    const simData = simulate(params, stelsel, true, betaalUitSpaar, ov).data;
+    results.push(simData.map((d) => ({ totaal: d.totaal, belasting: d.belasting, cumulBelasting: d.cumulBelasting })));
   }
 
+  // Helper to get percentile value
   const pct = (arr, p) => {
     const s = [...arr].sort((a, b) => a - b);
     return s[Math.floor((p / 100) * (s.length - 1))];
   };
 
+  // Helper to get the INDEX of the simulation at a given percentile for final cumulative
+  const pctIndex = (p) => {
+    const finalCumul = results.map((r, idx) => ({ idx, val: r[jaren].cumulBelasting }));
+    finalCumul.sort((a, b) => a.val - b.val);
+    return finalCumul[Math.floor((p / 100) * (finalCumul.length - 1))].idx;
+  };
+
+  // Find the simulation indices that represent each percentile based on final cumulative tax
+  const simIdxP10 = pctIndex(10);
+  const simIdxP25 = pctIndex(25);
+  const simIdxP50 = pctIndex(50);
+  const simIdxP75 = pctIndex(75);
+  const simIdxP90 = pctIndex(90);
+
   return Array.from({ length: jaren + 1 }, (_, i) => {
-    const vals = results.map((r) => r[i]);
+    const totaalVals = results.map((r) => r[i].totaal);
+
     return {
-      jaar: 2027 + i,
-      p10: Math.round(pct(vals, 10)),
-      p25: Math.round(pct(vals, 25)),
-      p50: Math.round(pct(vals, 50)),
-      p75: Math.round(pct(vals, 75)),
-      p90: Math.round(pct(vals, 90)),
+      jaar: 2026 + i,
+      p10: Math.round(pct(totaalVals, 10)),
+      p25: Math.round(pct(totaalVals, 25)),
+      p50: Math.round(pct(totaalVals, 50)),
+      p75: Math.round(pct(totaalVals, 75)),
+      p90: Math.round(pct(totaalVals, 90)),
+      // Per-year belasting from the SAME simulation that's at the percentile for cumulative
+      // This ensures per-year values sum to cumulative
+      belP10: Math.round(results[simIdxP10][i].belasting),
+      belP25: Math.round(results[simIdxP25][i].belasting),
+      belP50: Math.round(results[simIdxP50][i].belasting),
+      belP75: Math.round(results[simIdxP75][i].belasting),
+      belP90: Math.round(results[simIdxP90][i].belasting),
+      cumBelP10: Math.round(results[simIdxP10][i].cumulBelasting),
+      cumBelP25: Math.round(results[simIdxP25][i].cumulBelasting),
+      cumBelP50: Math.round(results[simIdxP50][i].cumulBelasting),
+      cumBelP75: Math.round(results[simIdxP75][i].cumulBelasting),
+      cumBelP90: Math.round(results[simIdxP90][i].cumulBelasting),
     };
   });
 }

@@ -58,6 +58,12 @@ export default function App() {
   const [urlState] = useState(() => readStateFromUrl());
   const hasUrlState = urlState !== null;
 
+  // Initialize RNG seed synchronously (must happen before MC useMemo hooks run)
+  // Using useState initializer to ensure it runs exactly once before render
+  useState(() => {
+    setSessionSeed(urlState?.mcSeed ?? DEFAULT_MC_SEED);
+  });
+
   // View state - go directly to dashboard if URL has state
   const [view, setView] = useState(hasUrlState ? "dashboard" : "landing");
   const [previousView, setPreviousView] = useState("landing");
@@ -98,12 +104,6 @@ export default function App() {
   const [mcPercentile, setMcPercentile] = useState(50);
   const [mcSeed, setMcSeed] = useState(urlState?.mcSeed ?? DEFAULT_MC_SEED);
 
-  // Initialize seed from URL on mount (separate effect to avoid side effects in useState)
-  useEffect(() => {
-    if (urlState?.mcSeed) {
-      setSessionSeed(urlState.mcSeed);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Generate new Monte Carlo simulation with new random seed
   const regenerateMC = () => {
@@ -270,6 +270,10 @@ export default function App() {
           setAdvancedMode={setAdvancedMode}
           mcPercentile={mcPercentile}
           setMcPercentile={setMcPercentile}
+          volEtf={volEtf}
+          setVolEtf={setVolEtf}
+          volCrypto={volCrypto}
+          setVolCrypto={setVolCrypto}
           fMet={fMet}
           wMet={wMet}
           mcDataForfaitair={mcDataForfaitair}

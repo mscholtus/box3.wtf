@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { formatCompact } from '../../utils/format';
+import { formatTooltip } from '../../utils/format';
 
 /**
  * Custom tooltip for Recharts
@@ -8,9 +8,9 @@ import { formatCompact } from '../../utils/format';
 export function CustomTooltip({ active, payload, label, theme }) {
   if (!active || !payload?.length) return null;
 
-  const items = payload.filter(
-    (p) => p.value != null && p.dataKey && !p.dataKey.startsWith("__") && !p.dataKey.includes("Range")
-  );
+  const items = payload
+    .filter((p) => p.value != null && p.dataKey && !p.dataKey.startsWith("__") && !p.dataKey.includes("Range"))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div
@@ -36,7 +36,7 @@ export function CustomTooltip({ active, payload, label, theme }) {
             {p.name || p.dataKey}
           </span>
           <span className="text-xs font-bold text-mist-950 dark:text-mist-50">
-            {formatCompact(p.value)}
+            {formatTooltip(p.value)}
           </span>
         </div>
       ))}

@@ -95,3 +95,40 @@ https://box3.wtf/#etf=50000&crypto=5000&spaar=25000&...
 - Pension investments (pensioen) are exempt from Box 3
 - The "werkelijk rendement" law is pending Eerste Kamer approval
 - All calculations run client-side; no data is sent to servers
+
+## Backlog: Historical Backtests
+
+**Goal**: Add backtest mode alongside Monte Carlo to show tax impact during real historical events (2008 crash, dot-com, COVID). More tangible than random simulations because users lived through these events.
+
+**Implementation approach**:
+1. Create `src/data/historicalReturns.json` with annual returns:
+   - ETF: MSCI World Total Return (1995-2024, ~30 years)
+   - Savings: ECB deposit rates or Dutch savings rates
+   - Crypto: BTC annual returns (2013-2024 only, earlier years N/A)
+
+2. Add `runBacktest(params, stelsel, startYear)` in `useSimulation.js`:
+   - Reuse existing `simulate()` with `overrideReturns` from historical data
+   - Return simulation results with year annotations
+
+3. Dashboard changes:
+   - Add "Backtest" toggle alongside Monte Carlo
+   - Dropdown to select start year (1995, 2000, 2007, 2010, etc.)
+   - Annotate chart with crisis events (vertical lines + labels)
+   - Show specific impact: "2008: ETF -38%, tax €X vs forfaitair €Y"
+
+**Key scenarios to highlight**:
+- **2008 Credit Crisis**: ETF ~-40%, savings rates still positive
+- **2000-2002 Dot-com**: Multi-year bear market, cumulative -45%
+- **2020 COVID**: -30% March, +70% by December (net positive year)
+- **2022 Rate hikes**: Both stocks and bonds negative
+
+**Data sources**:
+- MSCI World: `https://www.msci.com/end-of-day-data-search`
+- ECB rates: `https://www.ecb.europa.eu/stats/policy_and_exchange_rates/`
+- BTC: CoinGecko or CoinMarketCap historical data
+
+**Considerations**:
+- Crypto only available from ~2013, show N/A or exclude for earlier backtests
+- Start year matters significantly - 2007 vs 2009 start = very different outcomes
+- Could show "worst case start year" analysis automatically
+- Historical forfaitair rates also changed - may need to use current rates for fair comparison

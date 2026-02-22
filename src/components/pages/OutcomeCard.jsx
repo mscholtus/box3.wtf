@@ -67,7 +67,7 @@ export function OutcomeCard({
         {/* Forfaitair value */}
         <div>
           <div className="text-xs font-semibold text-forfaitair uppercase tracking-wide mb-1">
-            {isMonteCarlo ? `Forfaitair (mediaan)` : "Forfaitair 2027"}
+            {isMonteCarlo ? `Forfaitair (mediaan)` : "Forfaitair"}
           </div>
           <div className="text-3xl font-black text-mist-950 dark:text-mist-50 tracking-tight">
             {fmtK(forfaitair)}
@@ -93,7 +93,7 @@ export function OutcomeCard({
         {/* Werkelijk value */}
         <div className="text-right">
           <div className="text-xs font-semibold text-werkelijk uppercase tracking-wide mb-1">
-            {isMonteCarlo ? `Werkelijk (mediaan)` : "Werkelijk 2028+"}
+            {isMonteCarlo ? `Werkelijk (mediaan)` : "Werkelijk"}
           </div>
           <div className="text-3xl font-black text-mist-950 dark:text-mist-50 tracking-tight">
             {fmtK(werkelijk)}

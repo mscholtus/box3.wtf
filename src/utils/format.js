@@ -18,7 +18,7 @@ export function formatCurrency(n) {
 }
 
 /**
- * Format number as compact currency (K/M suffix)
+ * Format number as compact currency (K/M suffix) - for axis labels
  * @param {number} n
  * @returns {string}
  */
@@ -26,6 +26,18 @@ export function formatCompact(n) {
   if (n == null || isNaN(n)) return "—";
   if (Math.abs(n) >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
   if (Math.abs(n) >= 1_000) return `€${(n / 1_000).toFixed(0)}K`;
+  return formatCurrency(n);
+}
+
+/**
+ * Format number for tooltips - full value up to 1K, one decimal for larger
+ * @param {number} n
+ * @returns {string}
+ */
+export function formatTooltip(n) {
+  if (n == null || isNaN(n)) return "—";
+  if (Math.abs(n) >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1_000) return `€${(n / 1_000).toFixed(1)}K`;
   return formatCurrency(n);
 }
 

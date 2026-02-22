@@ -29,6 +29,8 @@ export function Dashboard({
   fiscaalPartner, setFiscaalPartner,
   advancedMode, setAdvancedMode,
   mcPercentile, setMcPercentile,
+  volEtf, setVolEtf,
+  volCrypto, setVolCrypto,
   // Simulation data
   fMet, wMet,
   mcDataForfaitair, mcDataWerkelijk,
@@ -43,37 +45,78 @@ export function Dashboard({
   theme,
 }) {
   const [activeTab, setActiveTab] = useState("vermogen");
+  const [showCumulative, setShowCumulative] = useState(false);
 
-  // Chart data - deterministic
-  const chartDet = useMemo(() => fMet.data.map((d, i) => ({
+  // Chart data - deterministic (exclude 2026 starting point)
+  // Vermogen: show werkelijk from 2028+ only (before that it equals forfaitair)
+  const chartVermogenCumul = useMemo(() => fMet.data.slice(1).map((d, i) => ({
     jaar: d.jaar,
     "Forfaitair": d.totaal,
-    "Werkelijk 2028+": wMet.data[i]?.totaal,
+    "Werkelijk 2028+": d.jaar >= 2028 ? wMet.data[i + 1]?.totaal : null,
   })), [fMet, wMet]);
 
-  const chartBel = useMemo(() => fMet.data.map((d, i) => ({
+  // Per-year growth: 2027 shows forfaitair only, 2028+ shows both
+  const chartVermogenYear = useMemo(() => fMet.data.slice(1).map((d, i) => ({
+    jaar: d.jaar,
+    "Forfaitair": d.totaal - fMet.data[i].totaal,
+    "Werkelijk 2028+": d.jaar >= 2028 ? (wMet.data[i + 1]?.totaal ?? 0) - (wMet.data[i]?.totaal ?? 0) : null,
+  })), [fMet, wMet]);
+
+  // Belasting charts: werkelijk only applies from 2028, show null before that
+  const chartBelCumul = useMemo(() => fMet.data.slice(1).map((d, i) => ({
     jaar: d.jaar,
     "Belasting Forfaitair": d.cumulBelasting,
-    "Belasting Werkelijk 2028+": wMet.data[i]?.cumulBelasting,
+    "Belasting Werkelijk 2028+": d.jaar >= 2028 ? wMet.data[i + 1]?.cumulBelasting : null,
   })), [fMet, wMet]);
 
-  // Chart data - Monte Carlo
-  const chartMC = useMemo(() => {
+  const chartBelYear = useMemo(() => fMet.data.slice(1).map((d, i) => ({
+    jaar: d.jaar,
+    "Belasting Forfaitair": d.belasting,
+    "Belasting Werkelijk 2028+": d.jaar >= 2028 ? wMet.data[i + 1]?.belasting : null,
+  })), [fMet, wMet]);
+
+  // Chart data - Monte Carlo (exclude 2026 starting point)
+  // Cumulative vermogen
+  const chartMCCumul = useMemo(() => {
     const pKey = `p${mcPercentile}`;
-    return mcDataForfaitair.map((d, i) => ({
+    return mcDataForfaitair.slice(1).map((d, i) => ({
       jaar: d.jaar,
       "MC Forfaitair": d[pKey],
-      "MC Werkelijk": mcDataWerkelijk[i]?.[pKey],
+      "MC Werkelijk": d.jaar >= 2028 ? mcDataWerkelijk[i + 1]?.[pKey] : null,
       "Forfaitair Range": [d.p10, d.p90],
-      "Werkelijk Range": [mcDataWerkelijk[i]?.p10, mcDataWerkelijk[i]?.p90],
+      "Werkelijk Range": d.jaar >= 2028 ? [mcDataWerkelijk[i + 1]?.p10, mcDataWerkelijk[i + 1]?.p90] : null,
     }));
   }, [mcDataForfaitair, mcDataWerkelijk, mcPercentile]);
 
-  const chartMCBel = useMemo(() => fMet.data.map((d, i) => ({
-    jaar: d.jaar,
-    "Belasting Forfaitair": d.cumulBelasting,
-    "Belasting Werkelijk": wMet.data[i]?.cumulBelasting,
-  })), [fMet, wMet]);
+  // Per-year vermogen growth for MC
+  const chartMCYear = useMemo(() => {
+    const pKey = `p${mcPercentile}`;
+    return mcDataForfaitair.slice(1).map((d, i) => ({
+      jaar: d.jaar,
+      "MC Forfaitair": d[pKey] - mcDataForfaitair[i][pKey],
+      "MC Werkelijk": d.jaar >= 2028
+        ? mcDataWerkelijk[i + 1]?.[pKey] - mcDataWerkelijk[i]?.[pKey]
+        : null,
+    }));
+  }, [mcDataForfaitair, mcDataWerkelijk, mcPercentile]);
+
+  const chartMCBelCumul = useMemo(() => {
+    const pKey = `cumBelP${mcPercentile}`;
+    return mcDataForfaitair.slice(1).map((d, i) => ({
+      jaar: d.jaar,
+      "Belasting Forfaitair": d[pKey],
+      "Belasting Werkelijk": d.jaar >= 2028 ? mcDataWerkelijk[i + 1]?.[pKey] : null,
+    }));
+  }, [mcDataForfaitair, mcDataWerkelijk, mcPercentile]);
+
+  const chartMCBelYear = useMemo(() => {
+    const pKey = `belP${mcPercentile}`;
+    return mcDataForfaitair.slice(1).map((d, i) => ({
+      jaar: d.jaar,
+      "Belasting Forfaitair": d[pKey],
+      "Belasting Werkelijk": d.jaar >= 2028 ? mcDataWerkelijk[i + 1]?.[pKey] : null,
+    }));
+  }, [mcDataForfaitair, mcDataWerkelijk, mcPercentile]);
 
   // Derived values
   const eindF = fMet.data[fMet.data.length - 1];
@@ -191,6 +234,101 @@ export function Dashboard({
           </div>
         )}
 
+        {/* Advanced mode controls */}
+        {advancedMode && (
+          <div className="bg-white dark:bg-mist-900 rounded-2xl border border-mist-200 dark:border-mist-700 p-4 mb-4 flex flex-col gap-4">
+            {/* Row 1: Percentile and chart controls */}
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                {/* Percentile slider */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-mist-500 dark:text-mist-400">Pessimistisch</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={4}
+                    step={1}
+                    value={[10, 25, 50, 75, 90].indexOf(mcPercentile)}
+                    onChange={(e) => setMcPercentile([10, 25, 50, 75, 90][Number(e.target.value)])}
+                    className="w-[100px] cursor-pointer"
+                    style={{ accentColor: CHART_COLORS.werkelijk }}
+                  />
+                  <span className="text-[11px] text-mist-500 dark:text-mist-400">Optimistisch</span>
+                </div>
+                <span className="text-xs font-semibold text-mist-600 dark:text-mist-300">
+                  {mcPercentile === 50 ? "Mediaan" : `P${mcPercentile}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Per jaar / Cumulatief toggle */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setShowCumulative(false)}
+                    className={clsx(
+                      "py-1 px-2.5 text-xs font-semibold rounded-md transition-colors cursor-pointer border",
+                      !showCumulative
+                        ? "bg-accent text-white border-accent"
+                        : "bg-transparent text-mist-500 dark:text-mist-400 border-mist-200 dark:border-mist-700 hover:border-mist-300 dark:hover:border-mist-600"
+                    )}
+                  >
+                    Per jaar
+                  </button>
+                  <button
+                    onClick={() => setShowCumulative(true)}
+                    className={clsx(
+                      "py-1 px-2.5 text-xs font-semibold rounded-md transition-colors cursor-pointer border",
+                      showCumulative
+                        ? "bg-accent text-white border-accent"
+                        : "bg-transparent text-mist-500 dark:text-mist-400 border-mist-200 dark:border-mist-700 hover:border-mist-300 dark:hover:border-mist-600"
+                    )}
+                  >
+                    Cumulatief
+                  </button>
+                </div>
+                {/* Regenerate button */}
+                <button
+                  onClick={regenerateMC}
+                  title="Genereer nieuwe simulatie"
+                  className="py-1 px-2.5 text-xs font-semibold font-sans bg-mist-100 dark:bg-mist-800 text-mist-500 dark:text-mist-400 border border-mist-200 dark:border-mist-700 rounded-md cursor-pointer flex items-center gap-1 hover:bg-mist-200 dark:hover:bg-mist-700 transition-colors"
+                >
+                  🎲 Nieuwe simulatie
+                </button>
+              </div>
+            </div>
+            {/* Row 2: Volatility sliders */}
+            <div className="flex items-center gap-6 flex-wrap border-t border-mist-100 dark:border-mist-800 pt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-mist-500 dark:text-mist-400 w-20">ETF volatiliteit</span>
+                <input
+                  type="range"
+                  min={5}
+                  max={30}
+                  step={1}
+                  value={Math.round(volEtf * 100)}
+                  onChange={(e) => setVolEtf(Number(e.target.value) / 100)}
+                  className="w-[80px] cursor-pointer"
+                  style={{ accentColor: CHART_COLORS.forfaitair }}
+                />
+                <span className="text-xs font-semibold text-mist-600 dark:text-mist-300 w-8">{Math.round(volEtf * 100)}%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-mist-500 dark:text-mist-400 w-24">Crypto volatiliteit</span>
+                <input
+                  type="range"
+                  min={20}
+                  max={80}
+                  step={5}
+                  value={Math.round(volCrypto * 100)}
+                  onChange={(e) => setVolCrypto(Number(e.target.value) / 100)}
+                  className="w-[80px] cursor-pointer"
+                  style={{ accentColor: CHART_COLORS.werkelijk }}
+                />
+                <span className="text-xs font-semibold text-mist-600 dark:text-mist-300 w-8">{Math.round(volCrypto * 100)}%</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Charts */}
         <div className="bg-white dark:bg-mist-900 rounded-2xl border border-mist-200 dark:border-mist-700 overflow-hidden mb-4 shadow-sm">
           {/* Tab bar */}
@@ -221,58 +359,61 @@ export function Dashboard({
           <div className="p-4">
             {activeTab === "vermogen" && (
               <>
-                {advancedMode && (
-                  <div className="px-2 pb-3 flex items-center justify-between flex-wrap gap-3">
-                    <div className="text-xs text-mist-500 dark:text-mist-400">
-                      {mcPercentile === 50 ? "Mediaan scenario" : `${mcPercentile}e percentiel scenario`}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-mist-500 dark:text-mist-400">Pessimistisch</span>
-                        <input
-                          type="range"
-                          min={0}
-                          max={4}
-                          step={1}
-                          value={[10, 25, 50, 75, 90].indexOf(mcPercentile)}
-                          onChange={(e) => setMcPercentile([10, 25, 50, 75, 90][Number(e.target.value)])}
-                          className="w-[120px] cursor-pointer"
-                          style={{ accentColor: CHART_COLORS.werkelijk }}
-                        />
-                        <span className="text-[11px] text-mist-500 dark:text-mist-400">Optimistisch</span>
-                      </div>
+                {/* Per jaar / Cumulatief toggle - only in simple mode */}
+                {!advancedMode && (
+                  <div className="px-2 pb-3 flex items-center justify-end">
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={regenerateMC}
-                        title="Genereer nieuwe simulatie"
-                        className="py-1 px-2.5 text-xs font-semibold font-sans bg-mist-100 dark:bg-mist-800 text-mist-500 dark:text-mist-400 border border-mist-200 dark:border-mist-700 rounded-md cursor-pointer flex items-center gap-1 hover:bg-mist-200 dark:hover:bg-mist-700 transition-colors"
+                        onClick={() => setShowCumulative(false)}
+                        className={clsx(
+                          "py-1 px-2.5 text-xs font-semibold rounded-md transition-colors cursor-pointer border",
+                          !showCumulative
+                            ? "bg-accent text-white border-accent"
+                            : "bg-transparent text-mist-500 dark:text-mist-400 border-mist-200 dark:border-mist-700 hover:border-mist-300 dark:hover:border-mist-600"
+                        )}
                       >
-                        🎲 Nieuw
+                        Per jaar
+                      </button>
+                      <button
+                        onClick={() => setShowCumulative(true)}
+                        className={clsx(
+                          "py-1 px-2.5 text-xs font-semibold rounded-md transition-colors cursor-pointer border",
+                          showCumulative
+                            ? "bg-accent text-white border-accent"
+                            : "bg-transparent text-mist-500 dark:text-mist-400 border-mist-200 dark:border-mist-700 hover:border-mist-300 dark:hover:border-mist-600"
+                        )}
+                      >
+                        Cumulatief
                       </button>
                     </div>
                   </div>
                 )}
                 <ResponsiveContainer width="100%" height={320}>
-                  <ComposedChart data={advancedMode ? chartMC : chartDet} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
+                  <ComposedChart data={advancedMode ? (showCumulative ? chartMCCumul : chartMCYear) : (showCumulative ? chartVermogenCumul : chartVermogenYear)} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
                     <XAxis dataKey="jaar" stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} />
                     <YAxis stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} tickFormatter={fmtK} width={72} />
                     <Tooltip {...tooltipProps} />
                     {advancedMode ? (
                       <>
-                        <Area
-                          type="monotone"
-                          dataKey="Forfaitair Range"
-                          fill={CHART_COLORS.forfaitair}
-                          fillOpacity={0.12}
-                          stroke="none"
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="Werkelijk Range"
-                          fill={CHART_COLORS.werkelijk}
-                          fillOpacity={0.12}
-                          stroke="none"
-                        />
+                        {showCumulative && (
+                          <>
+                            <Area
+                              type="monotone"
+                              dataKey="Forfaitair Range"
+                              fill={CHART_COLORS.forfaitair}
+                              fillOpacity={0.12}
+                              stroke="none"
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="Werkelijk Range"
+                              fill={CHART_COLORS.werkelijk}
+                              fillOpacity={0.12}
+                              stroke="none"
+                            />
+                          </>
+                        )}
                         <Line
                           type="monotone"
                           dataKey="MC Forfaitair"
@@ -311,13 +452,37 @@ export function Dashboard({
 
             {activeTab === "belasting" && (
               <>
-                {advancedMode && (
-                  <div className="px-2 pb-2 text-xs text-mist-500 dark:text-mist-400">
-                    Cumulatieve belasting (deterministisch)
+                {/* Per jaar / Cumulatief toggle - only in simple mode (advanced has it above) */}
+                {!advancedMode && (
+                  <div className="px-2 pb-3 flex items-center justify-end">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setShowCumulative(false)}
+                        className={clsx(
+                          "py-1 px-2.5 text-xs font-semibold rounded-md transition-colors cursor-pointer border",
+                          !showCumulative
+                            ? "bg-accent text-white border-accent"
+                            : "bg-transparent text-mist-500 dark:text-mist-400 border-mist-200 dark:border-mist-700 hover:border-mist-300 dark:hover:border-mist-600"
+                        )}
+                      >
+                        Per jaar
+                      </button>
+                      <button
+                        onClick={() => setShowCumulative(true)}
+                        className={clsx(
+                          "py-1 px-2.5 text-xs font-semibold rounded-md transition-colors cursor-pointer border",
+                          showCumulative
+                            ? "bg-accent text-white border-accent"
+                            : "bg-transparent text-mist-500 dark:text-mist-400 border-mist-200 dark:border-mist-700 hover:border-mist-300 dark:hover:border-mist-600"
+                        )}
+                      >
+                        Cumulatief
+                      </button>
+                    </div>
                   </div>
                 )}
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={advancedMode ? chartMCBel : chartBel} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
+                  <LineChart data={advancedMode ? (showCumulative ? chartMCBelCumul : chartMCBelYear) : (showCumulative ? chartBelCumul : chartBelYear)} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
                     <XAxis dataKey="jaar" stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} />
                     <YAxis stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} tickFormatter={fmtK} width={72} />
@@ -464,6 +629,10 @@ Dashboard.propTypes = {
   setAdvancedMode: PropTypes.func.isRequired,
   mcPercentile: PropTypes.number.isRequired,
   setMcPercentile: PropTypes.func.isRequired,
+  volEtf: PropTypes.number.isRequired,
+  setVolEtf: PropTypes.func.isRequired,
+  volCrypto: PropTypes.number.isRequired,
+  setVolCrypto: PropTypes.func.isRequired,
   fMet: PropTypes.object.isRequired,
   wMet: PropTypes.object.isRequired,
   mcDataForfaitair: PropTypes.array.isRequired,

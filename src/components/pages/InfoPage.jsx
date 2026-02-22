@@ -125,6 +125,58 @@ export function InfoPage({ onBack, onStartWizard, darkMode, setDarkMode }) {
         </div>
       </InfoBlock>
 
+      <InfoBlock title="Praktische gevolgen: voorspelbaarheid vs. onzekerheid">
+        <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
+          <p className="mb-3">
+            Beide stelsels hebben fundamentele nadelen voor verschillende groepen belastingplichtigen.
+          </p>
+
+          <div className="mb-4 p-3 bg-forfaitair/10 rounded-xl border border-forfaitair/30">
+            <div className="text-xs font-bold text-forfaitair uppercase tracking-wide mb-2">
+              Forfaitair stelsel (huidige situatie)
+            </div>
+            <ul className="list-disc list-inside space-y-1.5 text-sm">
+              <li><strong className="text-mist-950 dark:text-mist-50">Voorspelbaar</strong>: je weet van tevoren precies wat je betaalt</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Eenvoudig</strong>: geen discussie over kostprijs of waardering</li>
+              <li><strong className="text-red-600 dark:text-red-400">Oneerlijk bij lage rendementen</strong>: spaarders en voorzichtige beleggers betalen te veel</li>
+              <li><strong className="text-red-600 dark:text-red-400">Juridisch kwetsbaar</strong>: Hoge Raad oordeelde dat dit stelsel eigendomsrecht kan schenden</li>
+            </ul>
+          </div>
+
+          <div className="mb-4 p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
+            <div className="text-xs font-bold text-werkelijk uppercase tracking-wide mb-2">
+              Werkelijk rendement (vanaf 2028)
+            </div>
+            <ul className="list-disc list-inside space-y-1.5 text-sm">
+              <li><strong className="text-mist-950 dark:text-mist-50">Eerlijker bij lage rendementen</strong>: spaarders betalen minder</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Verliesverrekening</strong>: slechte jaren kunnen gecompenseerd worden</li>
+              <li><strong className="text-red-600 dark:text-red-400">Onvoorspelbaar</strong>: je belastingschuld hangt af van marktschommelingen</li>
+              <li><strong className="text-red-600 dark:text-red-400">Complexe administratie</strong>: kostprijs, waardering en verliezen bijhouden</li>
+              <li><strong className="text-red-600 dark:text-red-400">Liquiditeitsproblemen</strong>: belasting betalen over winst die je niet hebt gerealiseerd</li>
+            </ul>
+          </div>
+
+          <p className="mb-3">
+            <strong className="text-mist-950 dark:text-mist-50">Voor langetermijnbeleggers</strong> betekent werkelijk rendement dat je belastingaanslag
+            elk jaar sterk kan fluctueren. In een goed beursjaar betaal je fors meer, in een slecht jaar
+            mogelijk niets (maar je bouwt ook verliesverrekening op). Dit maakt financiële planning complexer.
+          </p>
+
+          <p className="mb-3">
+            <strong className="text-mist-950 dark:text-mist-50">Voor de Belastingdienst</strong> betekent dit systeem
+            een enorme toename in complexiteit: kostprijsberekeningen voor DCA-strategieën, waardering van
+            illiquide assets, verificatie van buitenlandse brokers en crypto-exchanges, en behandeling van
+            geschillen over verliesverrekening. Dit vergroot het risico op fouten en langdurige bezwaarprocedures.
+          </p>
+
+          <p className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30 text-sm">
+            <strong className="text-amber-700 dark:text-amber-400">Let op:</strong> Gebruik de geavanceerde modus (Monte Carlo)
+            om te zien hoe sterk je belastingschuld kan variëren bij verschillende marktscenario's.
+            De spreiding tussen P10 (pessimistisch) en P90 (optimistisch) laat zien hoe onzeker je situatie is.
+          </p>
+        </div>
+      </InfoBlock>
+
       <InfoBlock title="Wat berekent deze calculator?">
         <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
           <p className="mb-3 font-semibold text-mist-950 dark:text-mist-50">
