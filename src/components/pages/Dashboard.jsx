@@ -102,12 +102,12 @@ export function Dashboard({
   // Chart line configurations
   const DET_LINES = [
     { k: "Forfaitair", c: CHART_COLORS.forfaitair, d: false },
-    { k: "Werkelijk 2028+", c: CHART_COLORS.werkelijkAlt, d: false },
+    { k: "Werkelijk 2028+", c: CHART_COLORS.werkelijk, d: false },
   ];
 
   const BEL_LINES = [
     { k: "Belasting Forfaitair", c: CHART_COLORS.forfaitair, d: false },
-    { k: "Belasting Werkelijk 2028+", c: CHART_COLORS.belastingAlt, d: false },
+    { k: "Belasting Werkelijk 2028+", c: CHART_COLORS.werkelijk, d: false },
   ];
 
   const MC_BEL_LINES = [
