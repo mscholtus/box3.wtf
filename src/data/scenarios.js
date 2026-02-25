@@ -135,7 +135,7 @@ export const SCENARIOS = {
     id: 'stagnatie',
     name: 'Stagnatie',
     description: 'Lage groei: 2%/jaar ETF',
-    icon: '📊',
+    icon: '➡️',
     color: 'text-amber-600 dark:text-amber-400',
     bgColor: 'bg-amber-50 dark:bg-amber-950/30',
     borderColor: 'border-amber-200 dark:border-amber-800',
