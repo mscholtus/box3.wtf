@@ -126,23 +126,23 @@ export function Dashboard({
     // Prepare vermogen data with P10/P90 bands
     const vermogenData = mcF.data.slice(1).map((d, i) => ({
       jaar: d.jaar,
-      // Forfaitair (deterministic, no bands needed)
-      "Forfaitair": d.p50,
-      // Werkelijk with confidence bands (2028+ only)
-      "Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.p10 : null,
-      "Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.p50 : null,
-      "Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.p90 : null,
+      // Forfaitair (deterministic, no bands needed - use totaalP50)
+      "Forfaitair": d.totaalP50,
+      // Werkelijk with confidence bands (2028+ only - use totaalP10/P50/P90)
+      "Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.totaalP10 : null,
+      "Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.totaalP50 : null,
+      "Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.totaalP90 : null,
     }));
 
     // Prepare belasting data with P10/P90 bands
     const belastingData = mcF.data.slice(1).map((d, i) => ({
       jaar: d.jaar,
-      // Forfaitair cumulative tax
-      "Belasting Forfaitair": d.cumulBelastingP50,
-      // Werkelijk cumulative tax with confidence bands (2028+ only)
-      "Belasting Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.cumulBelastingP10 : null,
-      "Belasting Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.cumulBelastingP50 : null,
-      "Belasting Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.cumulBelastingP90 : null,
+      // Forfaitair cumulative tax (use cumBelP50)
+      "Belasting Forfaitair": d.cumBelP50,
+      // Werkelijk cumulative tax with confidence bands (2028+ only - use cumBelP10/P50/P90)
+      "Belasting Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.cumBelP10 : null,
+      "Belasting Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.cumBelP50 : null,
+      "Belasting Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.cumBelP90 : null,
     }));
 
     return {
