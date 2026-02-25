@@ -128,12 +128,12 @@ export function Dashboard({
       const wData = mcW.data[i + 1];
       return {
         jaar: d.jaar,
-        // Forfaitair (deterministic, no bands needed - use totaalP50)
-        "Forfaitair": d.totaalP50,
-        // Werkelijk with confidence bands (all years - use totaalP10/P50/P90)
-        "Werkelijk P10": wData?.totaalP10 || null,
-        "Werkelijk P50": wData?.totaalP50 || null,
-        "Werkelijk P90": wData?.totaalP90 || null,
+        // Forfaitair (deterministic, no bands needed - use true percentile p50)
+        "Forfaitair": d.p50,
+        // Werkelijk with confidence bands (all years - use true percentiles p10/p50/p90)
+        "Werkelijk P10": wData?.p10 || null,
+        "Werkelijk P50": wData?.p50 || null,
+        "Werkelijk P90": wData?.p90 || null,
       };
     });
 
@@ -142,12 +142,12 @@ export function Dashboard({
       const wData = mcW.data[i + 1];
       return {
         jaar: d.jaar,
-        // Forfaitair cumulative tax (use cumBelP50)
-        "Belasting Forfaitair": d.cumBelP50,
-        // Werkelijk cumulative tax with confidence bands (2028+ only - use cumBelP10/P50/P90)
-        "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.cumBelP10 : null,
-        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.cumBelP50 : null,
-        "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.cumBelP90 : null,
+        // Forfaitair cumulative tax (use true percentile cumBelTrueP50)
+        "Belasting Forfaitair": d.cumBelTrueP50,
+        // Werkelijk cumulative tax with confidence bands (2028+ only - use true percentiles)
+        "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.cumBelTrueP10 : null,
+        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.cumBelTrueP50 : null,
+        "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.cumBelTrueP90 : null,
       };
     });
 
@@ -180,14 +180,14 @@ export function Dashboard({
     pensioen: mcEnabled ? eindW.pensioenP50 : eindW.pensioen,
   } : null;
 
-  // MC uncertainty ranges for OutcomeCard
+  // MC uncertainty ranges for OutcomeCard (use true percentiles)
   const mcUncertainty = mcEnabled && mcResults ? {
-    forfaitairP10: eindF.totaalP10,
-    forfaitairP50: eindF.totaalP50,
-    forfaitairP90: eindF.totaalP90,
-    werkelijkP10: eindW.totaalP10,
-    werkelijkP50: eindW.totaalP50,
-    werkelijkP90: eindW.totaalP90,
+    forfaitairP10: eindF.p10,
+    forfaitairP50: eindF.p50,
+    forfaitairP90: eindF.p90,
+    werkelijkP10: eindW.p10,
+    werkelijkP50: eindW.p50,
+    werkelijkP90: eindW.p90,
   } : null;
 
   // Chart line configurations
@@ -254,8 +254,8 @@ export function Dashboard({
 
         {/* Outcome Card */}
         <OutcomeCard
-          forfaitair={mcEnabled ? eindF?.totaalP50 ?? 0 : eindF?.totaal ?? 0}
-          werkelijk={mcEnabled ? eindW?.totaalP50 ?? 0 : eindW?.totaal ?? 0}
+          forfaitair={mcEnabled ? eindF?.p50 ?? 0 : eindF?.totaal ?? 0}
+          werkelijk={mcEnabled ? eindW?.p50 ?? 0 : eindW?.totaal ?? 0}
           breakdownF={breakdownF}
           breakdownW={breakdownW}
           jaren={jaren}
