@@ -185,17 +185,15 @@ export default function App() {
     if (view !== "dashboard") return null;
 
     // Check if MC should be enabled
-    const scenario = SCENARIOS[selectedScenario];
-    const shouldEnableMC = selectedScenario === 'verwacht'
-      ? scenario?.mcEnabled
-      : (selectedScenario === 'custom' && customMCEnabled);
+    // MC is only enabled if user activated it via modal (customMCEnabled)
+    // Works for both 'verwacht' and 'custom' scenarios
+    const shouldEnableMC = (selectedScenario === 'verwacht' || selectedScenario === 'custom') && customMCEnabled;
 
     if (!shouldEnableMC) return null;
 
-    // Get volatility (from scenario or custom)
-    const volatility = selectedScenario === 'custom' && customVolatility
-      ? customVolatility
-      : scenario?.volatility;
+    // Get volatility (custom from modal, or default for verwacht)
+    const scenario = SCENARIOS[selectedScenario];
+    const volatility = customVolatility || scenario?.volatility;
 
     if (!volatility) return null;
 
@@ -296,6 +294,17 @@ export default function App() {
   // Navigate back to landing page
   const goToLanding = () => setView("landing");
 
+  // Handle scenario change - reset MC state when switching scenarios
+  const handleScenarioChange = (newScenario) => {
+    // Reset MC state when switching away from verwacht/custom
+    if (newScenario !== 'verwacht' && newScenario !== 'custom') {
+      setCustomReturns(null);
+      setCustomVolatility(null);
+      setCustomMCEnabled(false);
+    }
+    setSelectedScenario(newScenario);
+  };
+
   // Custom scenario handlers
   const handleCustomScenarioClick = () => {
     setShowCustomModal(true);
@@ -305,7 +314,13 @@ export default function App() {
     setCustomReturns(returns);
     setCustomVolatility(volatility);
     setCustomMCEnabled(!!volatility); // Enable MC if volatility is provided
-    setSelectedScenario('custom');
+    // Only switch to 'custom' if returns are actually different from defaults
+    // Otherwise keep 'verwacht' but with MC enabled
+    const isDefaultReturns = returns.etf === rendEtf && returns.crypto === rendCrypto && returns.spaar === rendSpaar;
+    if (!isDefaultReturns) {
+      setSelectedScenario('custom');
+    }
+    // If returns are default, stay on 'verwacht' but MC will be enabled via customMCEnabled
   };
 
   // Dashboard view (lazy loaded)
@@ -321,7 +336,7 @@ export default function App() {
           fMet={fMet}
           wMet={wMet}
           selectedScenario={selectedScenario}
-          setSelectedScenario={setSelectedScenario}
+          setSelectedScenario={handleScenarioChange}
           scenarioResults={scenarioResults}
           startSpaar={startSpaar}
           onCustomScenarioClick={handleCustomScenarioClick}

@@ -105,8 +105,8 @@ export const SCENARIOS = {
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     borderColor: 'border-blue-200 dark:border-blue-800',
-    mcEnabled: true, // Only this scenario has MC enabled by default
-    volatility: { etf: 0.15, crypto: 0.40 }, // Standard historical volatility
+    mcEnabled: false, // MC only via modal customization
+    volatility: { etf: 0.15, crypto: 0.40 }, // Default volatility if MC enabled via modal
   },
   bull: {
     id: 'bull',
