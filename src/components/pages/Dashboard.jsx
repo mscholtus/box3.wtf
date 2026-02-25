@@ -124,26 +124,32 @@ export function Dashboard({
     const { forfaitair: mcF, werkelijk: mcW } = mcResults;
 
     // Prepare vermogen data with P10/P90 bands
-    const vermogenData = mcF.data.slice(1).map((d, i) => ({
-      jaar: d.jaar,
-      // Forfaitair (deterministic, no bands needed - use totaalP50)
-      "Forfaitair": d.totaalP50,
-      // Werkelijk with confidence bands (2028+ only - use totaalP10/P50/P90)
-      "Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.totaalP10 : null,
-      "Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.totaalP50 : null,
-      "Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.totaalP90 : null,
-    }));
+    const vermogenData = mcF.data.slice(1).map((d, i) => {
+      const wData = mcW.data[i + 1];
+      return {
+        jaar: d.jaar,
+        // Forfaitair (deterministic, no bands needed - use totaalP50)
+        "Forfaitair": d.totaalP50,
+        // Werkelijk with confidence bands (all years - use totaalP10/P50/P90)
+        "Werkelijk P10": wData?.totaalP10 || null,
+        "Werkelijk P50": wData?.totaalP50 || null,
+        "Werkelijk P90": wData?.totaalP90 || null,
+      };
+    });
 
     // Prepare belasting data with P10/P90 bands
-    const belastingData = mcF.data.slice(1).map((d, i) => ({
-      jaar: d.jaar,
-      // Forfaitair cumulative tax (use cumBelP50)
-      "Belasting Forfaitair": d.cumBelP50,
-      // Werkelijk cumulative tax with confidence bands (2028+ only - use cumBelP10/P50/P90)
-      "Belasting Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.cumBelP10 : null,
-      "Belasting Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.cumBelP50 : null,
-      "Belasting Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.cumBelP90 : null,
-    }));
+    const belastingData = mcF.data.slice(1).map((d, i) => {
+      const wData = mcW.data[i + 1];
+      return {
+        jaar: d.jaar,
+        // Forfaitair cumulative tax (use cumBelP50)
+        "Belasting Forfaitair": d.cumBelP50,
+        // Werkelijk cumulative tax with confidence bands (2028+ only - use cumBelP10/P50/P90)
+        "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.cumBelP10 : null,
+        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.cumBelP50 : null,
+        "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.cumBelP90 : null,
+      };
+    });
 
     return {
       vermogen: vermogenData,
@@ -151,23 +157,37 @@ export function Dashboard({
     };
   }, [mcEnabled, mcResults]);
 
-  // Derived values
-  const eindF = displayFMet.data[displayFMet.data.length - 1];
-  const eindW = displayWMet.data[displayWMet.data.length - 1];
+  // Derived values - use MC results if enabled, otherwise deterministic
+  const eindF = mcEnabled && mcResults
+    ? mcResults.forfaitair.data[mcResults.forfaitair.data.length - 1]
+    : displayFMet.data[displayFMet.data.length - 1];
+  const eindW = mcEnabled && mcResults
+    ? mcResults.werkelijk.data[mcResults.werkelijk.data.length - 1]
+    : displayWMet.data[displayWMet.data.length - 1];
 
   // Asset breakdown for OutcomeCard tooltips
   const breakdownF = eindF ? {
-    etf: eindF.etf,
-    crypto: eindF.crypto,
-    spaar: eindF.spaar,
-    pensioen: eindF.pensioen,
+    etf: mcEnabled ? eindF.etfP50 : eindF.etf,
+    crypto: mcEnabled ? eindF.cryptoP50 : eindF.crypto,
+    spaar: mcEnabled ? eindF.spaarP50 : eindF.spaar,
+    pensioen: mcEnabled ? eindF.pensioenP50 : eindF.pensioen,
   } : null;
 
   const breakdownW = eindW ? {
-    etf: eindW.etf,
-    crypto: eindW.crypto,
-    spaar: eindW.spaar,
-    pensioen: eindW.pensioen,
+    etf: mcEnabled ? eindW.etfP50 : eindW.etf,
+    crypto: mcEnabled ? eindW.cryptoP50 : eindW.crypto,
+    spaar: mcEnabled ? eindW.spaarP50 : eindW.spaar,
+    pensioen: mcEnabled ? eindW.pensioenP50 : eindW.pensioen,
+  } : null;
+
+  // MC uncertainty ranges for OutcomeCard
+  const mcUncertainty = mcEnabled && mcResults ? {
+    forfaitairP10: eindF.totaalP10,
+    forfaitairP50: eindF.totaalP50,
+    forfaitairP90: eindF.totaalP90,
+    werkelijkP10: eindW.totaalP10,
+    werkelijkP50: eindW.totaalP50,
+    werkelijkP90: eindW.totaalP90,
   } : null;
 
   // Chart line configurations
@@ -234,14 +254,16 @@ export function Dashboard({
 
         {/* Outcome Card */}
         <OutcomeCard
-          forfaitair={eindF?.totaal ?? 0}
-          werkelijk={eindW?.totaal ?? 0}
+          forfaitair={mcEnabled ? eindF?.totaalP50 ?? 0 : eindF?.totaal ?? 0}
+          werkelijk={mcEnabled ? eindW?.totaalP50 ?? 0 : eindW?.totaal ?? 0}
           breakdownF={breakdownF}
           breakdownW={breakdownW}
           jaren={jaren}
           fiscaalPartner={fiscaalPartner}
           setFiscaalPartner={setFiscaalPartner}
           scenarioName={currentScenario?.name}
+          mcEnabled={mcEnabled}
+          mcUncertainty={mcUncertainty}
         />
 
         {/* Scenario Selector - Phase 1: Scenario Uncertainty */}
@@ -372,20 +394,29 @@ export function Dashboard({
                     {/* Monte Carlo: Show confidence bands */}
                     {mcEnabled && mcChartData && showCumulative ? (
                       <>
-                        {/* P10-P90 confidence band for Werkelijk */}
+                        {/* P10-P90 confidence band for Werkelijk - render as single band */}
+                        <defs>
+                          <linearGradient id="werkelijkBand" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.2} />
+                            <stop offset="100%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        {/* Band visualization using two Areas */}
                         <Area
                           type="monotone"
                           dataKey="Werkelijk P90"
                           stroke="none"
-                          fill={CHART_COLORS.werkelijk}
-                          fillOpacity={0.15}
+                          fill="url(#werkelijkBand)"
+                          fillOpacity={1}
+                          isAnimationActive={false}
                         />
                         <Area
                           type="monotone"
                           dataKey="Werkelijk P10"
                           stroke="none"
-                          fill="#ffffff"
+                          fill="white"
                           fillOpacity={1}
+                          isAnimationActive={false}
                         />
                         {/* Median lines */}
                         <Line
@@ -395,6 +426,7 @@ export function Dashboard({
                           strokeWidth={2.5}
                           dot={false}
                           activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
                         />
                         <Line
                           type="monotone"
@@ -403,6 +435,28 @@ export function Dashboard({
                           strokeWidth={2.5}
                           dot={false}
                           activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                        />
+                        {/* P90 and P10 as dashed lines for clarity */}
+                        <Line
+                          type="monotone"
+                          dataKey="Werkelijk P90"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Werkelijk P10"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
                         />
                       </>
                     ) : (
@@ -467,19 +521,27 @@ export function Dashboard({
                     {mcEnabled && mcChartData && showCumulative ? (
                       <>
                         {/* P10-P90 confidence band for Werkelijk */}
+                        <defs>
+                          <linearGradient id="werkelijkBandBel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.2} />
+                            <stop offset="100%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
                         <Area
                           type="monotone"
                           dataKey="Belasting Werkelijk P90"
                           stroke="none"
-                          fill={CHART_COLORS.werkelijk}
-                          fillOpacity={0.15}
+                          fill="url(#werkelijkBandBel)"
+                          fillOpacity={1}
+                          isAnimationActive={false}
                         />
                         <Area
                           type="monotone"
                           dataKey="Belasting Werkelijk P10"
                           stroke="none"
-                          fill="#ffffff"
+                          fill="white"
                           fillOpacity={1}
+                          isAnimationActive={false}
                         />
                         {/* Median lines */}
                         <Line
@@ -489,6 +551,7 @@ export function Dashboard({
                           strokeWidth={2.5}
                           dot={false}
                           activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
                         />
                         <Line
                           type="monotone"
@@ -497,6 +560,28 @@ export function Dashboard({
                           strokeWidth={2.5}
                           dot={false}
                           activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                        />
+                        {/* P90 and P10 as dashed lines */}
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P90"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P10"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
                         />
                       </>
                     ) : (
