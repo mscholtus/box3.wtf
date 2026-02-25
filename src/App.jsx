@@ -210,7 +210,7 @@ export default function App() {
 
     return results;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramsKey, betaalUitSpaar, selectedScenario, view, customMCEnabled, customVolatility]);
+  }, [paramsKey, betaalUitSpaar, selectedScenario, view, customMCEnabled, customVolatility?.etf, customVolatility?.crypto]);
 
   // Common page wrapper class (body handles bg/text via CSS)
   const pageClass = "min-h-screen";
