@@ -65,6 +65,7 @@ export function OutcomeCard({
   jaren,
   fiscaalPartner,
   setFiscaalPartner,
+  scenarioName,
 }) {
   const [showTooltipF, setShowTooltipF] = useState(false);
   const [showTooltipW, setShowTooltipW] = useState(false);
@@ -83,8 +84,15 @@ export function OutcomeCard({
     <div className="bg-white dark:bg-mist-900 rounded-2xl p-6 sm:p-7 border border-mist-200 dark:border-mist-700 mb-5 shadow-sm">
       {/* Header with fiscaal partner toggle */}
       <div className="flex items-start justify-between gap-4 mb-4">
-        <div className="text-sm font-bold text-mist-500 dark:text-mist-400 tracking-wider uppercase">
-          Eindvermogen na {jaren} jaar
+        <div>
+          <div className="text-sm font-bold text-mist-500 dark:text-mist-400 tracking-wider uppercase">
+            Eindvermogen na {jaren} jaar
+          </div>
+          {scenarioName && (
+            <div className="text-xs text-mist-600 dark:text-mist-400 mt-1">
+              Scenario: {scenarioName}
+            </div>
+          )}
         </div>
 
         {/* Fiscaal partner toggle */}
@@ -222,4 +230,5 @@ OutcomeCard.propTypes = {
   jaren: PropTypes.number.isRequired,
   fiscaalPartner: PropTypes.bool,
   setFiscaalPartner: PropTypes.func,
+  scenarioName: PropTypes.string,
 };

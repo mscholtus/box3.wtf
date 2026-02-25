@@ -170,9 +170,9 @@ export function InfoPage({ onBack, onStartWizard, darkMode, setDarkMode }) {
           </p>
 
           <p className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30 text-sm">
-            <strong className="text-amber-700 dark:text-amber-400">Let op:</strong> Gebruik de geavanceerde modus (Monte Carlo)
-            om te zien hoe sterk je belastingschuld kan variëren bij verschillende marktscenario's.
-            De spreiding tussen P10 (pessimistisch) en P90 (optimistisch) laat zien hoe onzeker je situatie is.
+            <strong className="text-amber-700 dark:text-amber-400">Let op:</strong> Gebruik verschillende marktscenario's
+            (bull market, crash, volatiel) om te zien hoe je belastingschuld varieert bij verschillende marktomstandigheden.
+            De geavanceerde analyse toont cash buffer impacts en mogelijke gedwongen verkoop van beleggingen.
           </p>
         </div>
       </InfoBlock>
@@ -190,7 +190,14 @@ export function InfoPage({ onBack, onStartWizard, darkMode, setDarkMode }) {
               <strong className="text-mist-950 dark:text-mist-50">Verliesverrekening</strong>: verliezen
               boven €500 worden onbeperkt voorwaarts verrekend met toekomstige winsten
             </li>
-            <li>Monte Carlo-simulaties met variabele rendementen en volatiliteit</li>
+            <li>
+              <strong className="text-mist-950 dark:text-mist-50">Marktscenario's</strong>: bull market, crash (2029),
+              volatiel en stagnatie voor verschillende marktomstandigheden
+            </li>
+            <li>
+              <strong className="text-mist-950 dark:text-mist-50">Geavanceerde analyse</strong>: cash buffer impact,
+              gedwongen verkoop van beleggingen en belastingonzekerheid
+            </li>
             <li>Tijdshorizon van 5 tot 40 jaar</li>
           </ul>
 

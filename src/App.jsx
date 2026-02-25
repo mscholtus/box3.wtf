@@ -22,6 +22,9 @@ import {
 import { useTheme } from "./hooks/useTheme";
 import { simulate } from "./hooks/useSimulation";
 
+// Scenario data
+import { getScenario, getScenarioIds } from "./data/scenarios";
+
 // Utils
 import { readStateFromUrl, getShareUrl, encodeState, copyToClipboard } from "./utils/shareState";
 
@@ -30,6 +33,7 @@ import {
   LandingPage,
   Wizard,
   InfoPage,
+  CustomScenarioModal,
 } from "./components/pages";
 
 // Lazy load Dashboard (contains Recharts ~400KB)
@@ -59,6 +63,11 @@ export default function App() {
   const [previousView, setPreviousView] = useState("landing");
   const [wizardStep, setWizardStep] = useState(1);
   const [showCopied, setShowCopied] = useState(false);
+
+  // Scenario state (Phase 1: Scenario Uncertainty)
+  const [selectedScenario, setSelectedScenario] = useState('verwacht');
+  const [customReturns, setCustomReturns] = useState(null);
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   // Helper to navigate to info page while remembering where we came from
   const goToInfo = () => {
@@ -142,6 +151,31 @@ export default function App() {
     [paramsKey, betaalUitSpaar, view]
   );
 
+  // Run simulations for all scenarios (Phase 1: Scenario Uncertainty)
+  const scenarioResults = useMemo(() => {
+    if (view !== "dashboard") return {};
+
+    const scenarioIds = getScenarioIds();
+    const results = {};
+
+    scenarioIds.forEach(id => {
+      const scenario = getScenario(id, jaren, { rendEtf, rendCrypto, rendSpaar }, customReturns);
+
+      // Run simulations for both tax systems with scenario returns
+      const forfaitairResult = simulate(params, "forfaitair", true, betaalUitSpaar, scenario.returns);
+      const werkelijkResult = simulate(params, "werkelijk", true, betaalUitSpaar, scenario.returns);
+
+      results[id] = {
+        ...scenario,
+        forfaitair: forfaitairResult,
+        werkelijk: werkelijkResult,
+      };
+    });
+
+    return results;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramsKey, betaalUitSpaar, view, customReturns]);
+
   // Common page wrapper class (body handles bg/text via CSS)
   const pageClass = "min-h-screen";
 
@@ -224,6 +258,16 @@ export default function App() {
   // Navigate back to landing page
   const goToLanding = () => setView("landing");
 
+  // Custom scenario handlers
+  const handleCustomScenarioClick = () => {
+    setShowCustomModal(true);
+  };
+
+  const handleCustomScenarioSave = (returns) => {
+    setCustomReturns(returns);
+    setSelectedScenario('custom');
+  };
+
   // Dashboard view (lazy loaded)
   return (
     <div className={pageClass}>
@@ -231,10 +275,16 @@ export default function App() {
         <Dashboard
           jaren={jaren}
           bijPensioen={bijPensioen}
+          bijSpaar={bijSpaar}
           fiscaalPartner={fiscaalPartner}
           setFiscaalPartner={setFiscaalPartner}
           fMet={fMet}
           wMet={wMet}
+          selectedScenario={selectedScenario}
+          setSelectedScenario={setSelectedScenario}
+          scenarioResults={scenarioResults}
+          startSpaar={startSpaar}
+          onCustomScenarioClick={handleCustomScenarioClick}
           handleShare={handleShare}
           showCopied={showCopied}
           goToInfo={goToInfo}
@@ -245,6 +295,14 @@ export default function App() {
           theme={theme}
         />
       </Suspense>
+
+      {/* Custom Scenario Modal */}
+      <CustomScenarioModal
+        isOpen={showCustomModal}
+        onClose={() => setShowCustomModal(false)}
+        onSave={handleCustomScenarioSave}
+        defaultReturns={{ etf: rendEtf, crypto: rendCrypto, spaar: rendSpaar }}
+      />
     </div>
   );
 }
