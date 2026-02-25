@@ -1,68 +1,92 @@
 import PropTypes from 'prop-types';
 import { clsx } from 'clsx';
+import { SCENARIOS } from '../../data/scenarios';
 
 /**
- * Toggle to enable/disable Monte Carlo uncertainty visualization
+ * Toggle for enabling/disabling Monte Carlo simulation
+ * Shows confidence bands (P10-P90) on charts when enabled
  */
-export function MonteCarloToggle({ enabled, onToggle, hasData }) {
-  return (
-    <div className="bg-white dark:bg-mist-900 rounded-2xl p-5 border border-mist-200 dark:border-mist-700 mb-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <h3 className="text-sm font-bold text-mist-500 dark:text-mist-400 tracking-wider uppercase mb-2">
-            📊 Onzekerheid tonen
-          </h3>
-          <p className="text-sm text-mist-700 dark:text-mist-300 leading-relaxed mb-3">
-            Schakel Monte Carlo simulatie in om een bereik van mogelijke uitkomsten te zien in plaats van één enkel scenario.
-            Dit geeft een realistischer beeld van de onvoorspelbaarheid van werkelijk rendement.
-          </p>
-          {!hasData && (
-            <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-              ⚠️ Monte Carlo simulatie is nog niet beschikbaar. Deze functie wordt binnenkort toegevoegd.
-            </p>
-          )}
-        </div>
+export function MonteCarloToggle({ enabled, onToggle, selectedScenario }) {
+  const scenario = SCENARIOS[selectedScenario];
+  const mcAvailable = scenario?.mcEnabled;
 
-        <button
-          onClick={onToggle}
-          disabled={!hasData}
-          className={clsx(
-            'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold',
-            'border transition-colors',
-            enabled
-              ? 'bg-werkelijk/10 border-werkelijk/30 text-werkelijk'
-              : 'bg-mist-100 dark:bg-mist-800 border-mist-200 dark:border-mist-700 text-mist-600 dark:text-mist-400',
-            !hasData && 'opacity-50 cursor-not-allowed',
-            hasData && 'cursor-pointer hover:border-werkelijk/50'
-          )}
-        >
-          <span className={clsx(
-            'w-10 h-5 rounded-full relative transition-colors',
-            enabled ? 'bg-werkelijk' : 'bg-mist-300 dark:bg-mist-600'
-          )}>
+  if (!mcAvailable) {
+    return null; // Don't show toggle for scenarios where MC doesn't make sense
+  }
+
+  return (
+    <div className="mb-5">
+      <div
+        className={clsx(
+          'p-4 rounded-xl border transition-all',
+          enabled
+            ? 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800'
+            : 'bg-mist-50 dark:bg-mist-900 border-mist-200 dark:border-mist-700'
+        )}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🎲</span>
+              <h3 className="font-semibold text-base text-mist-950 dark:text-mist-50">
+                Monte Carlo simulatie
+              </h3>
+            </div>
+            <p className="text-sm text-mist-600 dark:text-mist-400 mb-2">
+              Voeg onzekerheidsmarges toe aan dit scenario door 1.000 simulaties te draaien met
+              realistische marktvolatiliteit.
+            </p>
+            <div className="text-xs text-mist-500 dark:text-mist-400">
+              {enabled ? (
+                <span className="text-purple-600 dark:text-purple-400 font-semibold">
+                  ✓ Grafiek toont P10-P50-P90 banden
+                </span>
+              ) : (
+                <span>
+                  Grafieken tonen één lijn voor {scenario.name}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Toggle Switch */}
+          <button
+            onClick={onToggle}
+            className={clsx(
+              'relative inline-flex h-8 w-14 items-center rounded-full transition-colors',
+              'focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2',
+              enabled
+                ? 'bg-purple-600 dark:bg-purple-500'
+                : 'bg-mist-300 dark:bg-mist-700'
+            )}
+            aria-label="Toggle Monte Carlo simulatie"
+          >
             <span
               className={clsx(
-                'absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all',
-                enabled ? 'left-[22px]' : 'left-0.5'
+                'inline-block h-6 w-6 transform rounded-full bg-white transition-transform',
+                enabled ? 'translate-x-7' : 'translate-x-1'
               )}
             />
-          </span>
-          <span>{enabled ? 'Aan' : 'Uit'}</span>
-        </button>
-      </div>
-
-      {enabled && hasData && (
-        <div className={clsx(
-          'mt-4 p-3.5 rounded-xl',
-          'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800'
-        )}>
-          <div className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
-            <span className="font-bold">Grafiekweergave:</span> De grafieken tonen nu banden met
-            percentielwaarden (P10, P25, P50, P75, P90) uit 1000 simulaties. Hoe breder de band,
-            hoe onzekerder de uitkomst.
-          </div>
+          </button>
         </div>
-      )}
+
+        {/* Additional info when enabled */}
+        {enabled && (
+          <div className="mt-3 pt-3 border-t border-purple-200 dark:border-purple-800">
+            <div className="text-xs text-purple-700 dark:text-purple-300 space-y-1">
+              <div>
+                <strong>P10 (pessimistisch):</strong> Slechter dan 90% van de simulaties
+              </div>
+              <div>
+                <strong>P50 (mediaan):</strong> Midden van alle simulaties
+              </div>
+              <div>
+                <strong>P90 (optimistisch):</strong> Beter dan 90% van de simulaties
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -70,9 +94,5 @@ export function MonteCarloToggle({ enabled, onToggle, hasData }) {
 MonteCarloToggle.propTypes = {
   enabled: PropTypes.bool.isRequired,
   onToggle: PropTypes.func.isRequired,
-  hasData: PropTypes.bool,
-};
-
-MonteCarloToggle.defaultProps = {
-  hasData: false,
+  selectedScenario: PropTypes.string.isRequired,
 };

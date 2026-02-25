@@ -20,10 +20,10 @@ import {
 
 // Hooks
 import { useTheme } from "./hooks/useTheme";
-import { simulate } from "./hooks/useSimulation";
+import { simulate, generateMCScenarios, runPairedMonteCarlo } from "./hooks/useSimulation";
 
 // Scenario data
-import { getScenario, getScenarioIds } from "./data/scenarios";
+import { getScenario, getScenarioIds, SCENARIOS } from "./data/scenarios";
 
 // Utils
 import { readStateFromUrl, getShareUrl, encodeState, copyToClipboard } from "./utils/shareState";
@@ -68,6 +68,9 @@ export default function App() {
   const [selectedScenario, setSelectedScenario] = useState('verwacht');
   const [customReturns, setCustomReturns] = useState(null);
   const [showCustomModal, setShowCustomModal] = useState(false);
+
+  // Monte Carlo state (Phase 4: Monte Carlo Uncertainty)
+  const [mcEnabled, setMcEnabled] = useState(false);
 
   // Helper to navigate to info page while remembering where we came from
   const goToInfo = () => {
@@ -175,6 +178,28 @@ export default function App() {
     return results;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsKey, betaalUitSpaar, view, customReturns]);
+
+  // Monte Carlo simulation for selected scenario (Phase 4: Monte Carlo Uncertainty)
+  const mcResults = useMemo(() => {
+    if (!mcEnabled || view !== "dashboard") return null;
+
+    const scenario = SCENARIOS[selectedScenario];
+    if (!scenario?.mcEnabled || !scenario?.volatility) return null;
+
+    // Generate MC scenarios with scenario-specific volatility
+    const mcScenarios = generateMCScenarios(
+      params,
+      scenario.volatility.etf,
+      scenario.volatility.crypto,
+      1000
+    );
+
+    // Run paired Monte Carlo simulation
+    const results = runPairedMonteCarlo(params, betaalUitSpaar, mcScenarios);
+
+    return results;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mcEnabled, paramsKey, betaalUitSpaar, selectedScenario, view]);
 
   // Common page wrapper class (body handles bg/text via CSS)
   const pageClass = "min-h-screen";
@@ -285,6 +310,9 @@ export default function App() {
           scenarioResults={scenarioResults}
           startSpaar={startSpaar}
           onCustomScenarioClick={handleCustomScenarioClick}
+          mcEnabled={mcEnabled}
+          setMcEnabled={setMcEnabled}
+          mcResults={mcResults}
           handleShare={handleShare}
           showCopied={showCopied}
           goToInfo={goToInfo}

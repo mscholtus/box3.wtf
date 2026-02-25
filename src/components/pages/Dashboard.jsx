@@ -10,6 +10,7 @@ import { formatCompact } from "../../utils/format";
 import { CustomTooltip } from "../ui";
 import { OutcomeCard } from "./OutcomeCard";
 import { ScenarioSelector } from "./ScenarioSelector";
+import { MonteCarloToggle } from "./MonteCarloToggle";
 import { AdvancedInsights } from "./AdvancedInsights";
 
 const fmtK = formatCompact;
@@ -40,6 +41,9 @@ export function Dashboard({
   scenarioResults,
   startSpaar,
   onCustomScenarioClick,
+  // Monte Carlo
+  mcEnabled, setMcEnabled,
+  mcResults,
   // Actions
   handleShare,
   showCopied,
@@ -209,6 +213,13 @@ export function Dashboard({
           selectedScenario={selectedScenario}
           onScenarioChange={setSelectedScenario}
           onCustomClick={onCustomScenarioClick}
+        />
+
+        {/* Monte Carlo Toggle - Phase 4: Monte Carlo Uncertainty */}
+        <MonteCarloToggle
+          enabled={mcEnabled}
+          onToggle={() => setMcEnabled(!mcEnabled)}
+          selectedScenario={selectedScenario}
         />
 
         {/* Spaargeld uitgeput warning */}
@@ -511,6 +522,9 @@ Dashboard.propTypes = {
   scenarioResults: PropTypes.object.isRequired,
   startSpaar: PropTypes.number.isRequired,
   onCustomScenarioClick: PropTypes.func.isRequired,
+  mcEnabled: PropTypes.bool.isRequired,
+  setMcEnabled: PropTypes.func.isRequired,
+  mcResults: PropTypes.object,
   handleShare: PropTypes.func.isRequired,
   showCopied: PropTypes.bool.isRequired,
   goToInfo: PropTypes.func.isRequired,
