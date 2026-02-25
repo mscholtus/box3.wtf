@@ -67,10 +67,11 @@ export default function App() {
   // Scenario state (Phase 1: Scenario Uncertainty)
   const [selectedScenario, setSelectedScenario] = useState('verwacht');
   const [customReturns, setCustomReturns] = useState(null);
+  const [customVolatility, setCustomVolatility] = useState(null);
+  const [customMCEnabled, setCustomMCEnabled] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
 
-  // Monte Carlo state (Phase 4: Monte Carlo Uncertainty)
-  const [mcEnabled, setMcEnabled] = useState(false);
+  // Monte Carlo is now configured via custom scenario modal
 
   // Helper to navigate to info page while remembering where we came from
   const goToInfo = () => {
@@ -181,16 +182,28 @@ export default function App() {
 
   // Monte Carlo simulation for selected scenario (Phase 4: Monte Carlo Uncertainty)
   const mcResults = useMemo(() => {
-    if (!mcEnabled || view !== "dashboard") return null;
+    if (view !== "dashboard") return null;
 
+    // Check if MC should be enabled
     const scenario = SCENARIOS[selectedScenario];
-    if (!scenario?.mcEnabled || !scenario?.volatility) return null;
+    const shouldEnableMC = selectedScenario === 'verwacht'
+      ? scenario?.mcEnabled
+      : (selectedScenario === 'custom' && customMCEnabled);
+
+    if (!shouldEnableMC) return null;
+
+    // Get volatility (from scenario or custom)
+    const volatility = selectedScenario === 'custom' && customVolatility
+      ? customVolatility
+      : scenario?.volatility;
+
+    if (!volatility) return null;
 
     // Generate MC scenarios with scenario-specific volatility
     const mcScenarios = generateMCScenarios(
       params,
-      scenario.volatility.etf,
-      scenario.volatility.crypto,
+      volatility.etf,
+      volatility.crypto,
       1000
     );
 
@@ -199,7 +212,7 @@ export default function App() {
 
     return results;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mcEnabled, paramsKey, betaalUitSpaar, selectedScenario, view]);
+  }, [paramsKey, betaalUitSpaar, selectedScenario, view, customMCEnabled, customVolatility]);
 
   // Common page wrapper class (body handles bg/text via CSS)
   const pageClass = "min-h-screen";
@@ -288,8 +301,10 @@ export default function App() {
     setShowCustomModal(true);
   };
 
-  const handleCustomScenarioSave = (returns) => {
+  const handleCustomScenarioSave = (returns, volatility) => {
     setCustomReturns(returns);
+    setCustomVolatility(volatility);
+    setCustomMCEnabled(!!volatility); // Enable MC if volatility is provided
     setSelectedScenario('custom');
   };
 
@@ -310,8 +325,6 @@ export default function App() {
           scenarioResults={scenarioResults}
           startSpaar={startSpaar}
           onCustomScenarioClick={handleCustomScenarioClick}
-          mcEnabled={mcEnabled}
-          setMcEnabled={setMcEnabled}
           mcResults={mcResults}
           handleShare={handleShare}
           showCopied={showCopied}
@@ -330,6 +343,7 @@ export default function App() {
         onClose={() => setShowCustomModal(false)}
         onSave={handleCustomScenarioSave}
         defaultReturns={{ etf: rendEtf, crypto: rendCrypto, spaar: rendSpaar }}
+        defaultVolatility={{ etf: 0.15, crypto: 0.40 }}
       />
     </div>
   );

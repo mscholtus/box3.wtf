@@ -33,8 +33,8 @@ export function MonteCarloToggle({ enabled, onToggle, selectedScenario }) {
               </h3>
             </div>
             <p className="text-sm text-mist-600 dark:text-mist-400 mb-2">
-              Voeg onzekerheidsmarges toe aan dit scenario door 1.000 simulaties te draaien met
-              realistische marktvolatiliteit.
+              Voeg marktvolatiliteit toe aan constante rendementen door 1.000 simulaties te draaien.
+              Dit toont hoe onvoorspelbare markten je eindvermogen en belasting beïnvloeden.
             </p>
             <div className="text-xs text-mist-500 dark:text-mist-400">
               {enabled ? (

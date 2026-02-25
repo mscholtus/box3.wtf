@@ -45,10 +45,13 @@ PercentInput.propTypes = {
 /**
  * Modal for creating custom scenario with user-defined returns
  */
-export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns }) {
+export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns, defaultVolatility }) {
   const [etfReturn, setEtfReturn] = useState(Math.round(defaultReturns.etf * 100 * 10) / 10);
   const [cryptoReturn, setCryptoReturn] = useState(Math.round(defaultReturns.crypto * 100 * 10) / 10);
   const [spaarReturn, setSpaarReturn] = useState(Math.round(defaultReturns.spaar * 100 * 10) / 10);
+  const [enableMC, setEnableMC] = useState(false);
+  const [etfVol, setEtfVol] = useState(Math.round((defaultVolatility?.etf || 0.15) * 100));
+  const [cryptoVol, setCryptoVol] = useState(Math.round((defaultVolatility?.crypto || 0.40) * 100));
 
   if (!isOpen) return null;
 
@@ -57,7 +60,10 @@ export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns })
       etf: etfReturn / 100,
       crypto: cryptoReturn / 100,
       spaar: spaarReturn / 100,
-    });
+    }, enableMC ? {
+      etf: etfVol / 100,
+      crypto: cryptoVol / 100,
+    } : null);
     onClose();
   };
 
@@ -65,6 +71,9 @@ export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns })
     setEtfReturn(Math.round(defaultReturns.etf * 100 * 10) / 10);
     setCryptoReturn(Math.round(defaultReturns.crypto * 100 * 10) / 10);
     setSpaarReturn(Math.round(defaultReturns.spaar * 100 * 10) / 10);
+    setEnableMC(false);
+    setEtfVol(Math.round((defaultVolatility?.etf || 0.15) * 100));
+    setCryptoVol(Math.round((defaultVolatility?.crypto || 0.40) * 100));
   };
 
   return (
@@ -151,6 +160,78 @@ export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns })
             </div>
           </div>
 
+          {/* Monte Carlo toggle */}
+          <div className="mb-4">
+            <button
+              onClick={() => setEnableMC(!enableMC)}
+              className={clsx(
+                'w-full p-3 rounded-lg border transition-all text-left flex items-center justify-between',
+                enableMC
+                  ? 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800'
+                  : 'bg-mist-50 dark:bg-mist-900 border-mist-200 dark:border-mist-700 hover:bg-mist-100 dark:hover:bg-mist-800'
+              )}
+            >
+              <div>
+                <div className="text-xs font-semibold text-mist-700 dark:text-mist-300 mb-0.5">
+                  🎲 Monte Carlo simulatie
+                </div>
+                <div className="text-[10px] text-mist-600 dark:text-mist-400">
+                  Voeg volatiliteit toe om onzekerheid te tonen
+                </div>
+              </div>
+              <div className={clsx(
+                'w-10 h-5 rounded-full relative transition-colors',
+                enableMC ? 'bg-purple-600' : 'bg-mist-300 dark:bg-mist-700'
+              )}>
+                <span className={clsx(
+                  'absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all',
+                  enableMC ? 'left-[22px]' : 'left-0.5'
+                )} />
+              </div>
+            </button>
+
+            {/* Volatility inputs when MC enabled */}
+            {enableMC && (
+              <div className="mt-3 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                <div className="text-[10px] font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-2">
+                  Volatiliteit (standaardafwijking)
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1.5">
+                      📈 ETF volatiliteit
+                    </label>
+                    <PercentInput
+                      value={etfVol}
+                      onChange={setEtfVol}
+                      min={0}
+                      max={50}
+                      step={1}
+                    />
+                    <p className="text-[10px] text-purple-600 dark:text-purple-400 mt-1">
+                      ~15% historisch
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1.5">
+                      🪙 Crypto volatiliteit
+                    </label>
+                    <PercentInput
+                      value={cryptoVol}
+                      onChange={setCryptoVol}
+                      min={0}
+                      max={100}
+                      step={5}
+                    />
+                    <p className="text-[10px] text-purple-600 dark:text-purple-400 mt-1">
+                      ~40% historisch
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Info message */}
           <div className={clsx(
             'mb-4 p-2.5 rounded-lg text-xs',
@@ -209,4 +290,8 @@ CustomScenarioModal.propTypes = {
     crypto: PropTypes.number.isRequired,
     spaar: PropTypes.number.isRequired,
   }).isRequired,
+  defaultVolatility: PropTypes.shape({
+    etf: PropTypes.number,
+    crypto: PropTypes.number,
+  }),
 };

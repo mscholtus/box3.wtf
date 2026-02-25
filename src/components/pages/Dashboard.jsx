@@ -10,7 +10,6 @@ import { formatCompact } from "../../utils/format";
 import { CustomTooltip } from "../ui";
 import { OutcomeCard } from "./OutcomeCard";
 import { ScenarioSelector } from "./ScenarioSelector";
-import { MonteCarloToggle } from "./MonteCarloToggle";
 import { AdvancedInsights } from "./AdvancedInsights";
 
 const fmtK = formatCompact;
@@ -41,8 +40,7 @@ export function Dashboard({
   scenarioResults,
   startSpaar,
   onCustomScenarioClick,
-  // Monte Carlo
-  mcEnabled, setMcEnabled,
+  // Monte Carlo (enabled via custom scenario modal)
   mcResults,
   // Actions
   handleShare,
@@ -55,7 +53,9 @@ export function Dashboard({
 }) {
   const [activeTab, setActiveTab] = useState("vermogen");
   const [showCumulative, setShowCumulative] = useState(false);
-  const [showMonteCarlo, setShowMonteCarlo] = useState(false);
+
+  // Monte Carlo is enabled when mcResults exists
+  const mcEnabled = !!mcResults;
 
   // Use selected scenario results for display (fallback to base simulations if scenario not ready)
   const currentScenario = scenarioResults[selectedScenario];
@@ -271,13 +271,6 @@ export function Dashboard({
           selectedScenario={selectedScenario}
           onScenarioChange={setSelectedScenario}
           onCustomClick={onCustomScenarioClick}
-        />
-
-        {/* Monte Carlo Toggle - Phase 4: Monte Carlo Uncertainty */}
-        <MonteCarloToggle
-          enabled={mcEnabled}
-          onToggle={() => setMcEnabled(!mcEnabled)}
-          selectedScenario={selectedScenario}
         />
 
         {/* Spaargeld uitgeput warning */}
@@ -729,9 +722,7 @@ Dashboard.propTypes = {
   scenarioResults: PropTypes.object.isRequired,
   startSpaar: PropTypes.number.isRequired,
   onCustomScenarioClick: PropTypes.func.isRequired,
-  mcEnabled: PropTypes.bool.isRequired,
-  setMcEnabled: PropTypes.func.isRequired,
-  mcResults: PropTypes.object,
+  mcResults: PropTypes.object, // Optional - enabled via custom scenario modal
   handleShare: PropTypes.func.isRequired,
   showCopied: PropTypes.bool.isRequired,
   goToInfo: PropTypes.func.isRequired,
