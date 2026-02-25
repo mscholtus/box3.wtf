@@ -61,156 +61,214 @@ export function InfoPage({ onBack, onStartWizard, darkMode, setDarkMode }) {
       </div>
 
       {/* InfoBlocks */}
-      <InfoBlock title="Wat is het forfaitaire stelsel?">
+      <InfoBlock title="Forfaitair vs Werkelijk rendement">
         <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
-          <p className="mb-3">
-            In het huidige stelsel (tot en met 2027) gaat de Belastingdienst uit van een{" "}
-            <strong className="text-mist-950 dark:text-mist-50">fictief rendement</strong> op je vermogen,
-            ongeacht wat je echt hebt verdiend. Voor beleggingen (ETFs, aandelen, crypto) is
-            dat forfait 6%, voor spaargeld 1,3%.
+          <p className="mb-4">
+            Nederland schakelt in 2028 over van het <strong>forfaitaire stelsel</strong> (fictief rendement) naar
+            <strong> werkelijk rendement</strong> (daadwerkelijke opbrengsten).
           </p>
-          <p className="mb-3">
-            Je betaalt 36% belasting over dat fictieve rendement, na aftrek van het
-            heffingsvrij vermogen (€61.000 per persoon, €122.000 met fiscaal partner).
-          </p>
-          <p className="p-3 bg-mist-100 dark:bg-mist-800 rounded-xl border border-mist-200 dark:border-mist-700">
-            <strong className="text-mist-950 dark:text-mist-50">Rekenvoorbeeld:</strong> €100.000 in ETFs,
-            geen partner. Forfaitair inkomen: €100.000 × 6% = €6.000. Na heffingsvrij:
-            (€100.000 − €61.000) / €100.000 × €6.000 = €2.340. Belasting: €2.340 × 36% ={" "}
-            <strong className="text-accent">€842</strong>.
-          </p>
-        </div>
-      </InfoBlock>
 
-      <InfoBlock title="Wat verandert er met werkelijk rendement (2028+)?">
-        <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
-          <p className="mb-3">
-            In het nieuwe stelsel wordt belasting geheven over je{" "}
-            <strong className="text-mist-950 dark:text-mist-50">daadwerkelijke rendement</strong>: rente,
-            dividend, huurinkomsten en — cruciaal — ook{" "}
-            <strong className="text-mist-950 dark:text-mist-50">ongerealiseerde koerswinsten</strong>. Dat
-            zijn stijgingen in de waarde van je beleggingen die je nog niet hebt verkocht.
-          </p>
-          <p className="mb-3">
-            Het heffingsvrij inkomen wordt naar verwachting ~€1.800 per persoon (dit is een
-            schatting — het wetsvoorstel is nog in behandeling bij de Eerste Kamer).
-          </p>
-          <p>
-            Bij rendement boven de 6% (het huidige forfait) betaal je onder werkelijk
-            rendement <strong className="text-mist-950 dark:text-mist-50">meer</strong> belasting. Bij
-            rendement onder de 6% juist <strong className="text-mist-950 dark:text-mist-50">minder</strong>.
-            Dit is het kantelpunt.
-          </p>
+          {/* Side-by-side comparison */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div className="p-3 bg-forfaitair/10 rounded-xl border border-forfaitair/30">
+              <div className="text-xs font-bold text-forfaitair uppercase tracking-wide mb-2">Forfaitair (t/m 2027)</div>
+              <div className="text-sm space-y-1.5">
+                <div>• <strong>Fictief rendement:</strong> 6% beleggingen, 1,3% spaargeld</div>
+                <div>• <strong>Heffingsvrij:</strong> €61k vermogen/persoon</div>
+                <div>• <strong>Tarief:</strong> 36% over fictief rendement</div>
+              </div>
+            </div>
+            <div className="p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
+              <div className="text-xs font-bold text-werkelijk uppercase tracking-wide mb-2">Werkelijk rendement (2028+)</div>
+              <div className="text-sm space-y-1.5">
+                <div>• <strong>Daadwerkelijk rendement:</strong> rente, dividend, <span className="text-red-600 dark:text-red-400">ongerealiseerde winst</span></div>
+                <div>• <strong>Heffingsvrij:</strong> ~€1,8k inkomen/persoon</div>
+                <div>• <strong>Tarief:</strong> 36% over werkelijk rendement</div>
+                <div>• <strong>Verliesverrekening:</strong> &gt;€500 voorwaarts</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Example calculation */}
+          <div className="mb-3 p-3 bg-mist-100 dark:bg-mist-800 rounded-xl border border-mist-200 dark:border-mist-700">
+            <div className="text-sm font-semibold text-mist-950 dark:text-mist-50 mb-2">Rekenvoorbeeld: €100k ETFs, 7% rendement (€7k winst)</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div>
+                <strong className="text-forfaitair">Forfaitair:</strong> 6% forfait = €6k → Na heffingsvrij (€39k × 6%) = €2.340 → <strong>€842 belasting</strong>
+              </div>
+              <div>
+                <strong className="text-werkelijk">Werkelijk:</strong> €7k winst → Na heffingsvrij (€7k - €1,8k) = €5,2k → <strong>€1.872 belasting</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30 text-sm">
+            <strong className="text-amber-700 dark:text-amber-400">Kantelpunt ~6%:</strong> Werkelijk rendement &gt;6% = meer belasting,
+            &lt;6% = minder belasting dan forfaitair
+          </div>
         </div>
       </InfoBlock>
 
       <InfoBlock title="Waarom ongerealiseerde winst?">
         <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
-          <p className="mb-3">
-            De Hoge Raad oordeelde in 2021 dat het forfaitaire stelsel in strijd was met het
-            eigendomsrecht wanneer het werkelijke rendement structureel lager lag dan het
-            forfait. Daarom moest er een nieuwe basis voor box 3 belastingheffing gevonden worden.
+          <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-800">
+            <div className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-2">⚖️ Hoge Raad 2021</div>
+            <div className="text-sm text-blue-800 dark:text-blue-300">
+              Forfaitair stelsel in strijd met eigendomsrecht als werkelijk rendement structureel lager ligt.
+              Nieuwe basis voor box 3 nodig.
+            </div>
+          </div>
+          <p className="mb-3 text-sm">
+            <strong>Gerealiseerde winst (bij verkoop)?</strong> Zou vereisen dat banken per transactie aan-/verkoopprijs
+            rapporteren. <strong>Ongerealiseerde winst?</strong> Banken rapporteren al saldo begin/eind jaar — praktischer uitvoerbaar.
           </p>
-          <p className="mb-3">
-            Belasting op alleen <em>gerealiseerde</em> winst (bij verkoop) zou vereisen dat
-            financiële instellingen per transactie aankoopprijs en verkoopprijs rapporteren aan de Belastingdienst. De keuze voor
-            ongerealiseerde koerswinst sluit aan bij de bestaande datastroom: banken
-            rapporteren nu al saldo begin jaar en saldo eind jaar. Mogelijk is het beleid hier ingegeven door de realiteit van wat haalbaar is in de uitvoering.
-          </p>
-          <p>
-            Nederland wordt hiermee een van de weinige landen die ongerealiseerde
-            koerswinst als jaarlijks inkomen belast. Dat is internationaal opvallend — maar
-            het is context, geen aanklacht.
+          <p className="text-sm text-mist-500 dark:text-mist-400">
+            Nederland wordt hiermee een van de weinige landen die ongerealiseerde koerswinst jaarlijks belast. Internationaal opvallend.
           </p>
         </div>
       </InfoBlock>
 
-      <InfoBlock title="Praktische gevolgen: voorspelbaarheid vs. onzekerheid">
+      <InfoBlock title="Voorspelbaarheid vs. onzekerheid">
         <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
-          <p className="mb-3">
-            Beide stelsels hebben fundamentele nadelen voor verschillende groepen belastingplichtigen.
-          </p>
-
-          <div className="mb-4 p-3 bg-forfaitair/10 rounded-xl border border-forfaitair/30">
-            <div className="text-xs font-bold text-forfaitair uppercase tracking-wide mb-2">
-              Forfaitair stelsel (huidige situatie)
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            <div className="p-3 bg-forfaitair/10 rounded-xl border border-forfaitair/30">
+              <div className="text-xs font-bold text-forfaitair mb-2">✅ Forfaitair</div>
+              <div className="text-sm space-y-1">
+                <div>• Voorspelbaar tarief</div>
+                <div>• Geen administratie</div>
+                <div className="text-red-600 dark:text-red-400">• Oneerlijk bij &lt;6% rendement</div>
+                <div className="text-red-600 dark:text-red-400">• Juridisch kwetsbaar</div>
+              </div>
             </div>
-            <ul className="list-disc list-inside space-y-1.5 text-sm">
-              <li><strong className="text-mist-950 dark:text-mist-50">Voorspelbaar</strong>: je weet van tevoren precies wat je betaalt</li>
-              <li><strong className="text-mist-950 dark:text-mist-50">Eenvoudig</strong>: geen discussie over kostprijs of waardering</li>
-              <li><strong className="text-red-600 dark:text-red-400">Oneerlijk bij lage rendementen</strong>: spaarders en voorzichtige beleggers betalen te veel</li>
-              <li><strong className="text-red-600 dark:text-red-400">Juridisch kwetsbaar</strong>: Hoge Raad oordeelde dat dit stelsel eigendomsrecht kan schenden</li>
-            </ul>
+            <div className="p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
+              <div className="text-xs font-bold text-werkelijk mb-2">✅ Werkelijk rendement</div>
+              <div className="text-sm space-y-1">
+                <div>• Eerlijk voor spaarders</div>
+                <div>• Verliesverrekening</div>
+                <div className="text-red-600 dark:text-red-400">• Onvoorspelbaar (markt)</div>
+                <div className="text-red-600 dark:text-red-400">• Complexe administratie</div>
+                <div className="text-red-600 dark:text-red-400">• Liquiditeitsproblemen</div>
+              </div>
+            </div>
           </div>
 
-          <div className="mb-4 p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
-            <div className="text-xs font-bold text-werkelijk uppercase tracking-wide mb-2">
-              Werkelijk rendement (vanaf 2028)
+          <div className="space-y-2 text-sm mb-3">
+            <div>
+              <strong className="text-mist-950 dark:text-mist-50">Beleggers:</strong> Belastingaanslag fluctueert sterk per jaar.
+              Goed beursjaar = fors meer, slecht jaar = mogelijk niets + verliesverrekening.
             </div>
-            <ul className="list-disc list-inside space-y-1.5 text-sm">
-              <li><strong className="text-mist-950 dark:text-mist-50">Eerlijker bij lage rendementen</strong>: spaarders betalen minder</li>
-              <li><strong className="text-mist-950 dark:text-mist-50">Verliesverrekening</strong>: slechte jaren kunnen gecompenseerd worden</li>
-              <li><strong className="text-red-600 dark:text-red-400">Onvoorspelbaar</strong>: je belastingschuld hangt af van marktschommelingen</li>
-              <li><strong className="text-red-600 dark:text-red-400">Complexe administratie</strong>: kostprijs, waardering en verliezen bijhouden</li>
-              <li><strong className="text-red-600 dark:text-red-400">Liquiditeitsproblemen</strong>: belasting betalen over winst die je niet hebt gerealiseerd</li>
-            </ul>
+            <div>
+              <strong className="text-mist-950 dark:text-mist-50">Belastingdienst:</strong> Enorme complexiteit: DCA-kostprijs,
+              waardering illiquide assets, buitenlandse brokers, crypto, verliesverrekening → meer fouten en bezwaarprocedures.
+            </div>
           </div>
 
-          <p className="mb-3">
-            <strong className="text-mist-950 dark:text-mist-50">Voor langetermijnbeleggers</strong> betekent werkelijk rendement dat je belastingaanslag
-            elk jaar sterk kan fluctueren. In een goed beursjaar betaal je fors meer, in een slecht jaar
-            mogelijk niets (maar je bouwt ook verliesverrekening op). Dit maakt financiële planning complexer.
-          </p>
-
-          <p className="mb-3">
-            <strong className="text-mist-950 dark:text-mist-50">Voor de Belastingdienst</strong> betekent dit systeem
-            een enorme toename in complexiteit: kostprijsberekeningen voor DCA-strategieën, waardering van
-            illiquide assets, verificatie van buitenlandse brokers en crypto-exchanges, en behandeling van
-            geschillen over verliesverrekening. Dit vergroot het risico op fouten en langdurige bezwaarprocedures.
-          </p>
-
-          <p className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30 text-sm">
-            <strong className="text-amber-700 dark:text-amber-400">Let op:</strong> Gebruik verschillende marktscenario's
-            (bull market, crash, volatiel) om te zien hoe je belastingschuld varieert bij verschillende marktomstandigheden.
-            De geavanceerde analyse toont cash buffer impacts en mogelijke gedwongen verkoop van beleggingen.
-          </p>
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30 text-sm">
+            💡 Gebruik marktscenario's (bull, crash, volatiel) om belastingvariatie te zien.
+            Geavanceerde analyse toont cash buffer impact en gedwongen verkoop.
+          </div>
         </div>
       </InfoBlock>
 
       <InfoBlock title="Wat berekent deze calculator?">
         <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
-          <p className="mb-3 font-semibold text-mist-950 dark:text-mist-50">
-            Ondersteunde scenario's:
-          </p>
-          <ul className="list-disc list-inside mb-4 space-y-1.5">
-            <li>Spaargeld, ETFs/aandelen en crypto</li>
-            <li>Jaarlijkse bijstortingen</li>
-            <li>Fiscaal partnerschap (verdubbeling vrijstellingen)</li>
-            <li>
-              <strong className="text-mist-950 dark:text-mist-50">Verliesverrekening</strong>: verliezen
-              boven €500 worden onbeperkt voorwaarts verrekend met toekomstige winsten
-            </li>
-            <li>
-              <strong className="text-mist-950 dark:text-mist-50">Marktscenario's</strong>: bull market, crash (2029),
-              volatiel en stagnatie voor verschillende marktomstandigheden
-            </li>
-            <li>
-              <strong className="text-mist-950 dark:text-mist-50">Geavanceerde analyse</strong>: cash buffer impact,
-              gedwongen verkoop van beleggingen en belastingonzekerheid
-            </li>
-            <li>Tijdshorizon van 5 tot 40 jaar</li>
-          </ul>
+          <div className="mb-3 p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
+            <div className="text-xs font-bold text-werkelijk uppercase tracking-wide mb-2">✓ Ondersteund</div>
+            <div className="text-sm space-y-1">
+              <div>• Spaargeld, ETFs/aandelen, crypto</div>
+              <div>• Jaarlijkse bijstortingen</div>
+              <div>• Fiscaal partnerschap (2× vrijstellingen)</div>
+              <div>• Verliesverrekening (&gt;€500, voorwaarts)</div>
+              <div>• Marktscenario's: bull, crash 2029, volatiel, stagnatie</div>
+              <div>• Geavanceerde analyse: cash buffer, gedwongen verkoop</div>
+              <div>• Tijdshorizon: 5-40 jaar</div>
+            </div>
+          </div>
 
-          <p className="mb-3 font-semibold text-mist-950 dark:text-mist-50">
-            Niet ondersteund (buiten scope):
+          <div className="p-3 bg-mist-100 dark:bg-mist-800 rounded-xl border border-mist-200 dark:border-mist-700">
+            <div className="text-xs font-bold text-mist-950 dark:text-mist-50 uppercase tracking-wide mb-2">✗ Niet ondersteund</div>
+            <div className="text-sm space-y-1">
+              <div>• Vastgoed (box 3): andere waarderingsregels</div>
+              <div>• Startups: winst pas bij verkoop belast</div>
+              <div>• Uitgeleend geld en schulden</div>
+              <div>• Groene beleggingen (vrijstellingen vervallen 2028)</div>
+              <div>• Achterwaartse verliesverrekening</div>
+            </div>
+          </div>
+        </div>
+      </InfoBlock>
+
+      <InfoBlock title="Box 2 (BV) vs Box 3: wat is gunstiger?">
+        <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
+          <p className="mb-4">
+            Met het nieuwe werkelijk rendement stelsel wordt beleggen via een BV (box 2) relatief aantrekkelijker
+            dan privé beleggen (box 3), omdat box 3 nu ook ongerealiseerde winsten jaarlijks belast à 36%.
           </p>
-          <ul className="list-disc list-inside space-y-1.5">
-            <li>Vastgoed (box 3): andere regels voor waardering en realisatie</li>
-            <li>Investeringen in startups: winst wordt pas belast bij verkoop</li>
-            <li>Uitgeleend geld en schulden</li>
-            <li>Groene beleggingen (vrijstellingen vervallen in 2028)</li>
-            <li>Achterwaartse verliesverrekening (niet toegestaan onder de wet)</li>
-          </ul>
+
+          {/* Simplified comparison */}
+          <div className="mb-4 p-4 bg-mist-100 dark:bg-mist-800 rounded-xl border border-mist-200 dark:border-mist-700">
+            <div className="text-sm font-bold text-mist-950 dark:text-mist-50 mb-3">Het verschil in één oogopslag</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="font-semibold text-forfaitair mb-1.5">📊 Box 2 (BV)</div>
+                <div className="space-y-1">
+                  <div>• <strong>19%</strong> VPB over winst (t/m €200k)</div>
+                  <div>• Alleen bij realisatie</div>
+                  <div>• <strong>+26,9%</strong> bij uitkering</div>
+                  <div className="text-xs text-mist-500 dark:text-mist-400 mt-1">BV-kosten: ~€2k/jaar</div>
+                </div>
+              </div>
+              <div>
+                <div className="font-semibold text-werkelijk mb-1.5">💰 Box 3 (privé)</div>
+                <div className="space-y-1">
+                  <div>• <strong>36%</strong> over werkelijk rendement</div>
+                  <div>• Ook ongerealiseerde winst</div>
+                  <div>• Direct beschikbaar</div>
+                  <div className="text-xs text-mist-500 dark:text-mist-400 mt-1">Geen extra kosten</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Single year calculation */}
+          <div className="mb-4">
+            <div className="text-sm font-bold text-mist-950 dark:text-mist-50 mb-2">Per jaar: €100k belegd, 7% rendement (€7k winst)</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 bg-forfaitair/10 rounded-xl border border-forfaitair/30">
+                <div className="text-xs font-semibold text-forfaitair mb-1">BV (binnen houden)</div>
+                <div className="text-sm">VPB 19%: <strong>€1.330</strong></div>
+                <div className="text-xs text-mist-500 dark:text-mist-400 mt-1">Netto: €5.670 herbeleggen</div>
+              </div>
+              <div className="p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
+                <div className="text-xs font-semibold text-werkelijk mb-1">Box 3 (privé)</div>
+                <div className="text-sm">Box 3 36%: <strong>€2.520</strong></div>
+                <div className="text-xs text-mist-500 dark:text-mist-400 mt-1">Netto: €4.480 direct beschikbaar</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Break-even */}
+          <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30">
+            <div className="text-sm font-bold text-amber-700 dark:text-amber-400 mb-2">⚖️ Break-even: ~12 jaar</div>
+            <div className="text-sm text-amber-800 dark:text-amber-300 space-y-1.5">
+              <div>
+                <strong>Na 10 jaar</strong> (mét uitkering): BV €154k vs Box 3 €155k → Box 3 nog €900 voordeliger
+              </div>
+              <div>
+                <strong>Na 12+ jaar</strong> (mét uitkering): BV wordt voordeliger door compound effect (19% VPB laat meer kapitaal over dan 36% box 3)
+              </div>
+              <div className="text-xs pt-1">
+                💡 BV loont pas bij 15+ jaar horizon én als je kapitaal niet nodig hebt. BV-kosten (~€2k/jaar)
+                eten fiscaal voordeel op bij &lt;€200k vermogen.
+              </div>
+            </div>
+          </div>
+
+          <p className="text-sm text-mist-700 dark:text-mist-300">
+            <strong>Conclusie:</strong> Box 2 (BV) is fiscaal gunstiger op lange termijn als je winst binnen de BV houdt.
+            Box 3 is eenvoudiger en geeft directe toegang tot kapitaal. Het nieuwe werkelijk rendement stelsel
+            (36% op ongerealiseerde winst) maakt BV relatief aantrekkelijker.
+          </p>
         </div>
       </InfoBlock>
 
