@@ -9,6 +9,8 @@ import {
 import { formatCompact } from "../../utils/format";
 import { CustomTooltip } from "../ui";
 import { OutcomeCard } from "./OutcomeCard";
+import { ScenarioSelector } from "./ScenarioSelector";
+import { AdvancedInsights } from "./AdvancedInsights";
 
 const fmtK = formatCompact;
 
@@ -30,9 +32,14 @@ export function Dashboard({
   // State
   jaren,
   bijPensioen,
+  bijSpaar,
   fiscaalPartner, setFiscaalPartner,
   // Simulation data
   fMet, wMet,
+  selectedScenario, setSelectedScenario,
+  scenarioResults,
+  startSpaar,
+  onCustomScenarioClick,
   // Actions
   handleShare,
   showCopied,
@@ -44,51 +51,57 @@ export function Dashboard({
 }) {
   const [activeTab, setActiveTab] = useState("vermogen");
   const [showCumulative, setShowCumulative] = useState(false);
+  const [showMonteCarlo, setShowMonteCarlo] = useState(false);
+
+  // Use selected scenario results for display (fallback to base simulations if scenario not ready)
+  const currentScenario = scenarioResults[selectedScenario];
+  const displayFMet = currentScenario?.forfaitair || fMet;
+  const displayWMet = currentScenario?.werkelijk || wMet;
 
   // Chart data - deterministic (exclude 2026 starting point)
   // Vermogen: show werkelijk from 2028+ only (before that it equals forfaitair)
-  const chartVermogenCumul = useMemo(() => fMet.data.slice(1).map((d, i) => ({
+  const chartVermogenCumul = useMemo(() => displayFMet.data.slice(1).map((d, i) => ({
     jaar: d.jaar,
     "Forfaitair": d.totaal,
-    "Werkelijk 2028+": d.jaar >= 2028 ? wMet.data[i + 1]?.totaal : null,
-  })), [fMet, wMet]);
+    "Werkelijk 2028+": d.jaar >= 2028 ? displayWMet.data[i + 1]?.totaal : null,
+  })), [displayFMet, displayWMet]);
 
   // Per-year growth: 2027 shows forfaitair only, 2028+ shows both
-  const chartVermogenYear = useMemo(() => fMet.data.slice(1).map((d, i) => ({
+  const chartVermogenYear = useMemo(() => displayFMet.data.slice(1).map((d, i) => ({
     jaar: d.jaar,
-    "Forfaitair": d.totaal - fMet.data[i].totaal,
-    "Werkelijk 2028+": d.jaar >= 2028 ? (wMet.data[i + 1]?.totaal ?? 0) - (wMet.data[i]?.totaal ?? 0) : null,
-  })), [fMet, wMet]);
+    "Forfaitair": d.totaal - displayFMet.data[i].totaal,
+    "Werkelijk 2028+": d.jaar >= 2028 ? (displayWMet.data[i + 1]?.totaal ?? 0) - (displayWMet.data[i]?.totaal ?? 0) : null,
+  })), [displayFMet, displayWMet]);
 
   // Belasting charts: werkelijk only applies from 2028, show null before that
-  const chartBelCumul = useMemo(() => fMet.data.slice(1).map((d, i) => ({
+  const chartBelCumul = useMemo(() => displayFMet.data.slice(1).map((d, i) => ({
     jaar: d.jaar,
     "Belasting Forfaitair": d.cumulBelasting,
-    "Belasting Werkelijk 2028+": d.jaar >= 2028 ? wMet.data[i + 1]?.cumulBelasting : null,
-  })), [fMet, wMet]);
+    "Belasting Werkelijk 2028+": d.jaar >= 2028 ? displayWMet.data[i + 1]?.cumulBelasting : null,
+  })), [displayFMet, displayWMet]);
 
-  const chartBelYear = useMemo(() => fMet.data.slice(1).map((d, i) => ({
+  const chartBelYear = useMemo(() => displayFMet.data.slice(1).map((d, i) => ({
     jaar: d.jaar,
     "Belasting Forfaitair": d.belasting,
-    "Belasting Werkelijk 2028+": d.jaar >= 2028 ? wMet.data[i + 1]?.belasting : null,
-  })), [fMet, wMet]);
+    "Belasting Werkelijk 2028+": d.jaar >= 2028 ? displayWMet.data[i + 1]?.belasting : null,
+  })), [displayFMet, displayWMet]);
 
   // Tax payment sources - stacked bar chart data
-  const chartTaxSourcesF = useMemo(() => fMet.data.slice(1).map((d) => ({
+  const chartTaxSourcesF = useMemo(() => displayFMet.data.slice(1).map((d) => ({
     jaar: d.jaar,
     "Spaargeld": d.uitSpaar,
     "Inleg ETF/crypto": d.uitBijdragen,
     "Inleg pensioen": d.uitPensioen,
     "Verkoop beleggingen": d.uitInvestments,
-  })), [fMet]);
+  })), [displayFMet]);
 
-  const chartTaxSourcesW = useMemo(() => wMet.data.slice(1).map((d) => ({
+  const chartTaxSourcesW = useMemo(() => displayWMet.data.slice(1).map((d) => ({
     jaar: d.jaar,
     "Spaargeld": d.uitSpaar,
     "Inleg ETF/crypto": d.uitBijdragen,
     "Inleg pensioen": d.uitPensioen,
     "Verkoop beleggingen": d.uitInvestments,
-  })), [wMet]);
+  })), [displayWMet]);
 
   // Calculate shared Y-axis max for tax sources charts (to enable visual comparison)
   const taxSourcesMaxY = useMemo(() => {
@@ -99,8 +112,8 @@ export function Dashboard({
   }, [chartTaxSourcesF, chartTaxSourcesW]);
 
   // Derived values
-  const eindF = fMet.data[fMet.data.length - 1];
-  const eindW = wMet.data[wMet.data.length - 1];
+  const eindF = displayFMet.data[displayFMet.data.length - 1];
+  const eindW = displayWMet.data[displayWMet.data.length - 1];
 
   // Asset breakdown for OutcomeCard tooltips
   const breakdownF = eindF ? {
@@ -188,11 +201,19 @@ export function Dashboard({
           jaren={jaren}
           fiscaalPartner={fiscaalPartner}
           setFiscaalPartner={setFiscaalPartner}
+          scenarioName={currentScenario?.name}
+        />
+
+        {/* Scenario Selector - Phase 1: Scenario Uncertainty */}
+        <ScenarioSelector
+          selectedScenario={selectedScenario}
+          onScenarioChange={setSelectedScenario}
+          onCustomClick={onCustomScenarioClick}
         />
 
         {/* Spaargeld uitgeput warning */}
         {(() => {
-          const spaarUitgeputJaar = wMet.spaarUitgeputJaar;
+          const spaarUitgeputJaar = displayWMet.spaarUitgeputJaar;
           if (!spaarUitgeputJaar) return null;
           return (
             <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30 flex items-start gap-3">
@@ -436,11 +457,22 @@ export function Dashboard({
           </div>
         </div>
 
+        {/* Advanced Insights - Below charts with neutral styling */}
+        <AdvancedInsights
+          scenarioResults={scenarioResults}
+          selectedScenario={selectedScenario}
+          startSpaar={startSpaar}
+          bijSpaar={bijSpaar}
+          jaren={jaren}
+        />
+
         {/* Footer */}
         <div className="text-xs text-mist-500 dark:text-mist-400 leading-loose pb-5">
           * Forfait: 5.88% overige bezittingen, 1.37% spaargeld, heffingsvrij €57.684/persoon (2025 tarieven).
           Werkelijk 2028+: wetsvoorstel bij Eerste Kamer — ongerealiseerde koerswinsten jaarlijks belast à 36%, heffingsvrij ~€1.800 (schatting).
-          {" "}Pensioenbeleggingen vrijgesteld van box 3. Geen financiëel advies.
+          {" "}Pensioenbeleggingen vrijgesteld van box 3.
+          {" "}Alle rendementen zijn reëel (na inflatie, ~7% voor aandelen historisch).
+          {" "}Geen financiëel advies.
         </div>
 
         <div className="flex items-center gap-3 pb-5 flex-wrap">
@@ -469,10 +501,16 @@ export function Dashboard({
 Dashboard.propTypes = {
   jaren: PropTypes.number.isRequired,
   bijPensioen: PropTypes.number.isRequired,
+  bijSpaar: PropTypes.number.isRequired,
   fiscaalPartner: PropTypes.bool.isRequired,
   setFiscaalPartner: PropTypes.func.isRequired,
   fMet: PropTypes.object.isRequired,
   wMet: PropTypes.object.isRequired,
+  selectedScenario: PropTypes.string.isRequired,
+  setSelectedScenario: PropTypes.func.isRequired,
+  scenarioResults: PropTypes.object.isRequired,
+  startSpaar: PropTypes.number.isRequired,
+  onCustomScenarioClick: PropTypes.func.isRequired,
   handleShare: PropTypes.func.isRequired,
   showCopied: PropTypes.bool.isRequired,
   goToInfo: PropTypes.func.isRequired,
