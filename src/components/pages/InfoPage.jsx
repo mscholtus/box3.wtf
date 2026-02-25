@@ -214,6 +214,74 @@ export function InfoPage({ onBack, onStartWizard, darkMode, setDarkMode }) {
         </div>
       </InfoBlock>
 
+      <InfoBlock title="Box 2 (BV) vs Box 3: wat is gunstiger?">
+        <div className="text-[15px] text-mist-600 dark:text-mist-300 leading-relaxed">
+          <p className="mb-3">
+            Veel ondernemers overwegen om vermogen in een BV te beleggen (box 2) in plaats van privé (box 3).
+            Met het nieuwe werkelijk rendement stelsel wordt dit verschil groter.
+          </p>
+
+          <div className="mb-4 p-3 bg-mist-100 dark:bg-mist-800 rounded-xl border border-mist-200 dark:border-mist-700">
+            <div className="text-xs font-bold text-mist-950 dark:text-mist-50 uppercase tracking-wide mb-2">
+              Box 2: Beleggen via BV
+            </div>
+            <ul className="list-disc list-inside space-y-1.5 text-sm">
+              <li><strong className="text-mist-950 dark:text-mist-50">Vennootschapsbelasting</strong>: 19% over eerste €200k winst, 25,8% daarboven</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Alleen bij realisatie</strong>: geen belasting over ongerealiseerde koerswinst</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Dividend uitkering</strong>: 26,9% box 2 heffing bij uitkering aan jezelf</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Totale druk</strong>: ~40% bij €200k+ (VPB 25,8% + dividend 26,9% over restant)</li>
+              <li><strong className="text-red-600 dark:text-red-400">Nadelen</strong>: administratie, jaarrekening, BV oprichten/beheren, geen direct toegang tot kapitaal</li>
+            </ul>
+          </div>
+
+          <div className="mb-4 p-3 bg-mist-100 dark:bg-mist-800 rounded-xl border border-mist-200 dark:border-mist-700">
+            <div className="text-xs font-bold text-mist-950 dark:text-mist-50 uppercase tracking-wide mb-2">
+              Box 3: Privé beleggen (werkelijk rendement 2028+)
+            </div>
+            <ul className="list-disc list-inside space-y-1.5 text-sm">
+              <li><strong className="text-mist-950 dark:text-mist-50">Tarief</strong>: 36% over werkelijk rendement</li>
+              <li><strong className="text-red-600 dark:text-red-400">Ongerealiseerde winst</strong>: jaarlijks belast, ook zonder verkoop</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Direct beschikbaar</strong>: geen dividend nodig, simpel opnemen</li>
+              <li><strong className="text-mist-950 dark:text-mist-50">Eenvoud</strong>: geen BV-administratie of jaarrekening</li>
+            </ul>
+          </div>
+
+          <p className="mb-3">
+            <strong className="text-mist-950 dark:text-mist-50">Rekenvoorbeeld</strong>: €100.000 belegd, 7% rendement = €7.000 winst
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div className="p-3 bg-forfaitair/10 rounded-xl border border-forfaitair/30">
+              <div className="text-xs font-bold text-forfaitair mb-2">Via BV (box 2)</div>
+              <div className="text-sm space-y-1">
+                <div>VPB 19%: €1.330</div>
+                <div>Netto over: €5.670</div>
+                <div className="text-xs text-mist-500 dark:text-mist-400 mt-2">
+                  <em>Bij uitkering nog 26,9% box 2 heffing (€1.525) = totaal €2.855</em>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 bg-werkelijk/10 rounded-xl border border-werkelijk/30">
+              <div className="text-xs font-bold text-werkelijk mb-2">Privé (box 3)</div>
+              <div className="text-sm space-y-1">
+                <div>Box 3: 36% × €7.000 = €2.520</div>
+                <div>Netto over: €4.480</div>
+                <div className="text-xs text-mist-500 dark:text-mist-400 mt-2">
+                  <em>Direct beschikbaar, geen extra heffing</em>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200/50 dark:border-amber-800/30 text-sm">
+            <strong className="text-amber-700 dark:text-amber-400">Conclusie:</strong> Box 2 (BV) is fiscaal gunstiger
+            als je winst <em>niet</em> meteen nodig hebt en in de BV kunt laten staan. Houd je winst binnen,
+            dan betaal je max 25,8% VPB. Box 3 is aantrekkelijker bij directe beschikbaarheid en lagere administratieve lasten.
+            Het nieuwe werkelijk rendement stelsel maakt box 2 relatief aantrekkelijker door de 36% heffing op
+            ongerealiseerde winst in box 3.
+          </p>
+        </div>
+      </InfoBlock>
+
       {/* Disclaimer */}
       <div className="mb-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/30">
         <div className="text-sm font-bold text-amber-700 dark:text-amber-400 mb-2">
