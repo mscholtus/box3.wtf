@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { clsx } from "clsx";
 import {
-  LineChart, Line, BarChart, Bar,
+  LineChart, Line, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 
@@ -114,6 +114,42 @@ export function Dashboard({
     const maxW = Math.max(...chartTaxSourcesW.map(sumRow));
     return Math.max(maxF, maxW);
   }, [chartTaxSourcesF, chartTaxSourcesW]);
+
+  // Monte Carlo chart data - add percentile bands when MC is enabled
+  const mcChartData = useMemo(() => {
+    if (!mcEnabled || !mcResults) return null;
+
+    // Extract percentile data from MC results
+    // mcResults has structure: { forfaitair: {...}, werkelijk: {...}, diff: [...] }
+    const { forfaitair: mcF, werkelijk: mcW } = mcResults;
+
+    // Prepare vermogen data with P10/P90 bands
+    const vermogenData = mcF.data.slice(1).map((d, i) => ({
+      jaar: d.jaar,
+      // Forfaitair (deterministic, no bands needed)
+      "Forfaitair": d.p50,
+      // Werkelijk with confidence bands (2028+ only)
+      "Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.p10 : null,
+      "Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.p50 : null,
+      "Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.p90 : null,
+    }));
+
+    // Prepare belasting data with P10/P90 bands
+    const belastingData = mcF.data.slice(1).map((d, i) => ({
+      jaar: d.jaar,
+      // Forfaitair cumulative tax
+      "Belasting Forfaitair": d.cumulBelastingP50,
+      // Werkelijk cumulative tax with confidence bands (2028+ only)
+      "Belasting Werkelijk P10": d.jaar >= 2028 ? mcW.data[i + 1]?.cumulBelastingP10 : null,
+      "Belasting Werkelijk P50": d.jaar >= 2028 ? mcW.data[i + 1]?.cumulBelastingP50 : null,
+      "Belasting Werkelijk P90": d.jaar >= 2028 ? mcW.data[i + 1]?.cumulBelastingP90 : null,
+    }));
+
+    return {
+      vermogen: vermogenData,
+      belasting: belastingData,
+    };
+  }, [mcEnabled, mcResults]);
 
   // Derived values
   const eindF = displayFMet.data[displayFMet.data.length - 1];
@@ -324,23 +360,66 @@ export function Dashboard({
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={showCumulative ? chartVermogenCumul : chartVermogenYear} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
+                  <LineChart
+                    data={mcEnabled && mcChartData && showCumulative ? mcChartData.vermogen : (showCumulative ? chartVermogenCumul : chartVermogenYear)}
+                    margin={{ top: 4, right: 20, left: 4, bottom: 4 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
                     <XAxis dataKey="jaar" stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} />
                     <YAxis stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} tickFormatter={fmtK} width={72} />
                     <Tooltip {...tooltipProps} />
-                    {DET_LINES.map(({ k, c, d }) => (
-                      <Line
-                        key={k}
-                        type="monotone"
-                        dataKey={k}
-                        stroke={c}
-                        strokeWidth={2.5}
-                        strokeDasharray={d ? "5 3" : "0"}
-                        dot={false}
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                      />
-                    ))}
+
+                    {/* Monte Carlo: Show confidence bands */}
+                    {mcEnabled && mcChartData && showCumulative ? (
+                      <>
+                        {/* P10-P90 confidence band for Werkelijk */}
+                        <Area
+                          type="monotone"
+                          dataKey="Werkelijk P90"
+                          stroke="none"
+                          fill={CHART_COLORS.werkelijk}
+                          fillOpacity={0.15}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="Werkelijk P10"
+                          stroke="none"
+                          fill="#ffffff"
+                          fillOpacity={1}
+                        />
+                        {/* Median lines */}
+                        <Line
+                          type="monotone"
+                          dataKey="Forfaitair"
+                          stroke={CHART_COLORS.forfaitair}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Werkelijk P50"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      </>
+                    ) : (
+                      /* Deterministic: Show regular lines */
+                      DET_LINES.map(({ k, c, d }) => (
+                        <Line
+                          key={k}
+                          type="monotone"
+                          dataKey={k}
+                          stroke={c}
+                          strokeWidth={2.5}
+                          strokeDasharray={d ? "5 3" : "0"}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      ))
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </>
@@ -375,23 +454,66 @@ export function Dashboard({
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={showCumulative ? chartBelCumul : chartBelYear} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
+                  <LineChart
+                    data={mcEnabled && mcChartData && showCumulative ? mcChartData.belasting : (showCumulative ? chartBelCumul : chartBelYear)}
+                    margin={{ top: 4, right: 20, left: 4, bottom: 4 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
                     <XAxis dataKey="jaar" stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} />
                     <YAxis stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} tickFormatter={fmtK} width={72} />
                     <Tooltip {...tooltipProps} />
-                    {BEL_LINES.map(({ k, c, d }) => (
-                      <Line
-                        key={k}
-                        type="monotone"
-                        dataKey={k}
-                        stroke={c}
-                        strokeWidth={2.5}
-                        strokeDasharray={d ? "5 3" : "0"}
-                        dot={false}
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                      />
-                    ))}
+
+                    {/* Monte Carlo: Show confidence bands */}
+                    {mcEnabled && mcChartData && showCumulative ? (
+                      <>
+                        {/* P10-P90 confidence band for Werkelijk */}
+                        <Area
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P90"
+                          stroke="none"
+                          fill={CHART_COLORS.werkelijk}
+                          fillOpacity={0.15}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P10"
+                          stroke="none"
+                          fill="#ffffff"
+                          fillOpacity={1}
+                        />
+                        {/* Median lines */}
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Forfaitair"
+                          stroke={CHART_COLORS.forfaitair}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P50"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      </>
+                    ) : (
+                      /* Deterministic: Show regular lines */
+                      BEL_LINES.map(({ k, c, d }) => (
+                        <Line
+                          key={k}
+                          type="monotone"
+                          dataKey={k}
+                          stroke={c}
+                          strokeWidth={2.5}
+                          strokeDasharray={d ? "5 3" : "0"}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      ))
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </>
