@@ -50,8 +50,8 @@ export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns, d
   const [cryptoReturn, setCryptoReturn] = useState(Math.round(defaultReturns.crypto * 100 * 10) / 10);
   const [spaarReturn, setSpaarReturn] = useState(Math.round(defaultReturns.spaar * 100 * 10) / 10);
   const [enableMC, setEnableMC] = useState(false);
-  const [etfVol, setEtfVol] = useState(Math.round((defaultVolatility?.etf || 0.15) * 100));
-  const [cryptoVol, setCryptoVol] = useState(Math.round((defaultVolatility?.crypto || 0.40) * 100));
+  const [etfVol, setEtfVol] = useState(Math.round((defaultVolatility?.etf || 0.18) * 100));
+  const [cryptoVol, setCryptoVol] = useState(Math.round((defaultVolatility?.crypto || 0.50) * 100));
 
   if (!isOpen) return null;
 
@@ -72,8 +72,8 @@ export function CustomScenarioModal({ isOpen, onClose, onSave, defaultReturns, d
     setCryptoReturn(Math.round(defaultReturns.crypto * 100 * 10) / 10);
     setSpaarReturn(Math.round(defaultReturns.spaar * 100 * 10) / 10);
     setEnableMC(false);
-    setEtfVol(Math.round((defaultVolatility?.etf || 0.15) * 100));
-    setCryptoVol(Math.round((defaultVolatility?.crypto || 0.40) * 100));
+    setEtfVol(Math.round((defaultVolatility?.etf || 0.18) * 100));
+    setCryptoVol(Math.round((defaultVolatility?.crypto || 0.50) * 100));
   };
 
   return (

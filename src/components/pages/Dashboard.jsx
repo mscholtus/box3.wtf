@@ -123,37 +123,69 @@ export function Dashboard({
     // mcResults has structure: { forfaitair: {...}, werkelijk: {...}, diff: [...] }
     const { forfaitair: mcF, werkelijk: mcW } = mcResults;
 
-    // Prepare vermogen data with P10/P90 bands
-    const vermogenData = mcF.data.slice(1).map((d, i) => {
+    // Prepare vermogen cumulative data with P10/P90 bands
+    const vermogenCumul = mcF.data.slice(1).map((d, i) => {
       const wData = mcW.data[i + 1];
       return {
         jaar: d.jaar,
-        // Forfaitair (deterministic, no bands needed - use true percentile p50)
-        "Forfaitair": d.p50,
-        // Werkelijk with confidence bands (all years - use true percentiles p10/p50/p90)
+        // Forfaitair (use fixed-scenario P50 to show actual volatility)
+        "Forfaitair": d.totaalP50,
+        // Werkelijk with confidence bands (use true percentiles for bands, fixed-scenario for line)
         "Werkelijk P10": wData?.p10 || null,
-        "Werkelijk P50": wData?.p50 || null,
+        "Werkelijk P50": wData?.totaalP50 || null, // Show actual volatile simulation, not smooth median
         "Werkelijk P90": wData?.p90 || null,
       };
     });
 
-    // Prepare belasting data with P10/P90 bands
-    const belastingData = mcF.data.slice(1).map((d, i) => {
+    // Prepare vermogen per-year data (growth per year)
+    const vermogenYear = mcF.data.slice(1).map((d, i) => {
+      const prevF = mcF.data[i];
+      const wData = mcW.data[i + 1];
+      const prevW = mcW.data[i];
+      return {
+        jaar: d.jaar,
+        // Forfaitair per-year growth (use fixed-scenario to show volatility)
+        "Forfaitair": d.totaalP50 - prevF.totaalP50,
+        // Werkelijk per-year growth with confidence bands (2028+ only)
+        "Werkelijk P10": d.jaar >= 2028 ? (wData?.p10 || 0) - (prevW?.p10 || 0) : null,
+        "Werkelijk P50": d.jaar >= 2028 ? (wData?.totaalP50 || 0) - (prevW?.totaalP50 || 0) : null, // Show actual volatile simulation
+        "Werkelijk P90": d.jaar >= 2028 ? (wData?.p90 || 0) - (prevW?.p90 || 0) : null,
+      };
+    });
+
+    // Prepare belasting cumulative data with P10/P90 bands
+    const belastingCumul = mcF.data.slice(1).map((d, i) => {
       const wData = mcW.data[i + 1];
       return {
         jaar: d.jaar,
-        // Forfaitair cumulative tax (use true percentile cumBelTrueP50)
-        "Belasting Forfaitair": d.cumBelTrueP50,
-        // Werkelijk cumulative tax with confidence bands (2028+ only - use true percentiles)
+        // Forfaitair cumulative tax (use fixed-scenario to show actual path)
+        "Belasting Forfaitair": d.cumBelP50,
+        // Werkelijk cumulative tax with confidence bands (2028+ only)
         "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.cumBelTrueP10 : null,
-        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.cumBelTrueP50 : null,
+        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.cumBelP50 : null, // Show actual volatile simulation
         "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.cumBelTrueP90 : null,
       };
     });
 
+    // Prepare belasting per-year data (tax per year, not cumulative)
+    const belastingYear = mcF.data.slice(1).map((d, i) => {
+      const wData = mcW.data[i + 1];
+      return {
+        jaar: d.jaar,
+        // Forfaitair per-year tax (use fixed-scenario to show actual volatility)
+        "Belasting Forfaitair": d.belP50,
+        // Werkelijk per-year tax with confidence bands (2028+ only)
+        "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.belTrueP10 : null,
+        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.belP50 : null, // Show actual volatile simulation
+        "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.belTrueP90 : null,
+      };
+    });
+
     return {
-      vermogen: vermogenData,
-      belasting: belastingData,
+      vermogenCumul,
+      vermogenYear,
+      belastingCumul,
+      belastingYear,
     };
   }, [mcEnabled, mcResults]);
 
@@ -180,13 +212,14 @@ export function Dashboard({
     pensioen: mcEnabled ? eindW.pensioenP50 : eindW.pensioen,
   } : null;
 
-  // MC uncertainty ranges for OutcomeCard (use true percentiles)
+  // MC uncertainty ranges for OutcomeCard
+  // Show true percentiles (p10/p90) for the range, but fixed-scenario (totaalP50) for the main value
   const mcUncertainty = mcEnabled && mcResults ? {
     forfaitairP10: eindF.p10,
-    forfaitairP50: eindF.p50,
+    forfaitairP50: eindF.totaalP50, // Use fixed-scenario to match chart line
     forfaitairP90: eindF.p90,
     werkelijkP10: eindW.p10,
-    werkelijkP50: eindW.p50,
+    werkelijkP50: eindW.totaalP50, // Use fixed-scenario to match chart line
     werkelijkP90: eindW.p90,
   } : null;
 
@@ -254,8 +287,8 @@ export function Dashboard({
 
         {/* Outcome Card */}
         <OutcomeCard
-          forfaitair={mcEnabled ? eindF?.p50 ?? 0 : eindF?.totaal ?? 0}
-          werkelijk={mcEnabled ? eindW?.p50 ?? 0 : eindW?.totaal ?? 0}
+          forfaitair={mcEnabled ? eindF?.totaalP50 ?? 0 : eindF?.totaal ?? 0}
+          werkelijk={mcEnabled ? eindW?.totaalP50 ?? 0 : eindW?.totaal ?? 0}
           breakdownF={breakdownF}
           breakdownW={breakdownW}
           jaren={jaren}
@@ -376,7 +409,11 @@ export function Dashboard({
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
                   <LineChart
-                    data={mcEnabled && mcChartData && showCumulative ? mcChartData.vermogen : (showCumulative ? chartVermogenCumul : chartVermogenYear)}
+                    data={
+                      mcEnabled && mcChartData
+                        ? (showCumulative ? mcChartData.vermogenCumul : mcChartData.vermogenYear)
+                        : (showCumulative ? chartVermogenCumul : chartVermogenYear)
+                    }
                     margin={{ top: 4, right: 20, left: 4, bottom: 4 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
@@ -385,7 +422,7 @@ export function Dashboard({
                     <Tooltip {...tooltipProps} />
 
                     {/* Monte Carlo: Show confidence bands */}
-                    {mcEnabled && mcChartData && showCumulative ? (
+                    {mcEnabled && mcChartData ? (
                       <>
                         {/* P10-P90 confidence band for Werkelijk - render as single band */}
                         <defs>
@@ -502,7 +539,11 @@ export function Dashboard({
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
                   <LineChart
-                    data={mcEnabled && mcChartData && showCumulative ? mcChartData.belasting : (showCumulative ? chartBelCumul : chartBelYear)}
+                    data={
+                      mcEnabled && mcChartData
+                        ? (showCumulative ? mcChartData.belastingCumul : mcChartData.belastingYear)
+                        : (showCumulative ? chartBelCumul : chartBelYear)
+                    }
                     margin={{ top: 4, right: 20, left: 4, bottom: 4 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
@@ -511,7 +552,7 @@ export function Dashboard({
                     <Tooltip {...tooltipProps} />
 
                     {/* Monte Carlo: Show confidence bands */}
-                    {mcEnabled && mcChartData && showCumulative ? (
+                    {mcEnabled && mcChartData ? (
                       <>
                         {/* P10-P90 confidence band for Werkelijk */}
                         <defs>

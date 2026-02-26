@@ -95,7 +95,7 @@ export const SCENARIOS = {
     bgColor: 'bg-purple-50 dark:bg-purple-950/30',
     borderColor: 'border-purple-200 dark:border-purple-800',
     mcEnabled: false, // Custom scenarios define their own pattern
-    volatility: { etf: 0.15, crypto: 0.40 }, // Default, but not used unless MC enabled
+    volatility: { etf: 0.18, crypto: 0.50 }, // Default, but not used unless MC enabled
   },
   verwacht: {
     id: 'verwacht',
@@ -106,7 +106,7 @@ export const SCENARIOS = {
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     borderColor: 'border-blue-200 dark:border-blue-800',
     mcEnabled: false, // MC only via modal customization
-    volatility: { etf: 0.15, crypto: 0.40 }, // Default volatility if MC enabled via modal
+    volatility: { etf: 0.18, crypto: 0.50 }, // Default volatility if MC enabled via modal (18% = historical S&P 500)
   },
   bull: {
     id: 'bull',
