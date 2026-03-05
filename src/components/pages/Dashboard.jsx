@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { clsx } from "clsx";
 import {
-  LineChart, Line, BarChart, Bar,
+  LineChart, Line, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 
@@ -40,6 +40,8 @@ export function Dashboard({
   scenarioResults,
   startSpaar,
   onCustomScenarioClick,
+  // Monte Carlo (enabled via custom scenario modal)
+  mcResults,
   // Actions
   handleShare,
   showCopied,
@@ -51,7 +53,9 @@ export function Dashboard({
 }) {
   const [activeTab, setActiveTab] = useState("vermogen");
   const [showCumulative, setShowCumulative] = useState(false);
-  const [showMonteCarlo, setShowMonteCarlo] = useState(false);
+
+  // Monte Carlo is enabled when mcResults exists
+  const mcEnabled = !!mcResults;
 
   // Use selected scenario results for display (fallback to base simulations if scenario not ready)
   const currentScenario = scenarioResults[selectedScenario];
@@ -111,23 +115,112 @@ export function Dashboard({
     return Math.max(maxF, maxW);
   }, [chartTaxSourcesF, chartTaxSourcesW]);
 
-  // Derived values
-  const eindF = displayFMet.data[displayFMet.data.length - 1];
-  const eindW = displayWMet.data[displayWMet.data.length - 1];
+  // Monte Carlo chart data - add percentile bands when MC is enabled
+  const mcChartData = useMemo(() => {
+    if (!mcEnabled || !mcResults) return null;
+
+    // Extract percentile data from MC results
+    // mcResults has structure: { forfaitair: {...}, werkelijk: {...}, diff: [...] }
+    const { forfaitair: mcF, werkelijk: mcW } = mcResults;
+
+    // Prepare vermogen cumulative data with P10/P90 bands
+    const vermogenCumul = mcF.data.slice(1).map((d, i) => {
+      const wData = mcW.data[i + 1];
+      return {
+        jaar: d.jaar,
+        // Forfaitair (use fixed-scenario P50 to show actual volatility)
+        "Forfaitair": d.totaalP50,
+        // Werkelijk with confidence bands (use true percentiles for bands, fixed-scenario for line)
+        "Werkelijk P10": wData?.p10 || null,
+        "Werkelijk P50": wData?.totaalP50 || null, // Show actual volatile simulation, not smooth median
+        "Werkelijk P90": wData?.p90 || null,
+      };
+    });
+
+    // Prepare vermogen per-year data (growth per year)
+    const vermogenYear = mcF.data.slice(1).map((d, i) => {
+      const prevF = mcF.data[i];
+      const wData = mcW.data[i + 1];
+      const prevW = mcW.data[i];
+      return {
+        jaar: d.jaar,
+        // Forfaitair per-year growth (use fixed-scenario to show volatility)
+        "Forfaitair": d.totaalP50 - prevF.totaalP50,
+        // Werkelijk per-year growth with confidence bands (2028+ only)
+        "Werkelijk P10": d.jaar >= 2028 ? (wData?.p10 || 0) - (prevW?.p10 || 0) : null,
+        "Werkelijk P50": d.jaar >= 2028 ? (wData?.totaalP50 || 0) - (prevW?.totaalP50 || 0) : null, // Show actual volatile simulation
+        "Werkelijk P90": d.jaar >= 2028 ? (wData?.p90 || 0) - (prevW?.p90 || 0) : null,
+      };
+    });
+
+    // Prepare belasting cumulative data with P10/P90 bands
+    const belastingCumul = mcF.data.slice(1).map((d, i) => {
+      const wData = mcW.data[i + 1];
+      return {
+        jaar: d.jaar,
+        // Forfaitair cumulative tax (use fixed-scenario to show actual path)
+        "Belasting Forfaitair": d.cumBelP50,
+        // Werkelijk cumulative tax with confidence bands (2028+ only)
+        "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.cumBelTrueP10 : null,
+        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.cumBelP50 : null, // Show actual volatile simulation
+        "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.cumBelTrueP90 : null,
+      };
+    });
+
+    // Prepare belasting per-year data (tax per year, not cumulative)
+    const belastingYear = mcF.data.slice(1).map((d, i) => {
+      const wData = mcW.data[i + 1];
+      return {
+        jaar: d.jaar,
+        // Forfaitair per-year tax (use fixed-scenario to show actual volatility)
+        "Belasting Forfaitair": d.belP50,
+        // Werkelijk per-year tax with confidence bands (2028+ only)
+        "Belasting Werkelijk P10": d.jaar >= 2028 ? wData?.belTrueP10 : null,
+        "Belasting Werkelijk P50": d.jaar >= 2028 ? wData?.belP50 : null, // Show actual volatile simulation
+        "Belasting Werkelijk P90": d.jaar >= 2028 ? wData?.belTrueP90 : null,
+      };
+    });
+
+    return {
+      vermogenCumul,
+      vermogenYear,
+      belastingCumul,
+      belastingYear,
+    };
+  }, [mcEnabled, mcResults]);
+
+  // Derived values - use MC results if enabled, otherwise deterministic
+  const eindF = mcEnabled && mcResults
+    ? mcResults.forfaitair.data[mcResults.forfaitair.data.length - 1]
+    : displayFMet.data[displayFMet.data.length - 1];
+  const eindW = mcEnabled && mcResults
+    ? mcResults.werkelijk.data[mcResults.werkelijk.data.length - 1]
+    : displayWMet.data[displayWMet.data.length - 1];
 
   // Asset breakdown for OutcomeCard tooltips
   const breakdownF = eindF ? {
-    etf: eindF.etf,
-    crypto: eindF.crypto,
-    spaar: eindF.spaar,
-    pensioen: eindF.pensioen,
+    etf: mcEnabled ? eindF.etfP50 : eindF.etf,
+    crypto: mcEnabled ? eindF.cryptoP50 : eindF.crypto,
+    spaar: mcEnabled ? eindF.spaarP50 : eindF.spaar,
+    pensioen: mcEnabled ? eindF.pensioenP50 : eindF.pensioen,
   } : null;
 
   const breakdownW = eindW ? {
-    etf: eindW.etf,
-    crypto: eindW.crypto,
-    spaar: eindW.spaar,
-    pensioen: eindW.pensioen,
+    etf: mcEnabled ? eindW.etfP50 : eindW.etf,
+    crypto: mcEnabled ? eindW.cryptoP50 : eindW.crypto,
+    spaar: mcEnabled ? eindW.spaarP50 : eindW.spaar,
+    pensioen: mcEnabled ? eindW.pensioenP50 : eindW.pensioen,
+  } : null;
+
+  // MC uncertainty ranges for OutcomeCard
+  // Show true percentiles (p10/p90) for the range, but fixed-scenario (totaalP50) for the main value
+  const mcUncertainty = mcEnabled && mcResults ? {
+    forfaitairP10: eindF.p10,
+    forfaitairP50: eindF.totaalP50, // Use fixed-scenario to match chart line
+    forfaitairP90: eindF.p90,
+    werkelijkP10: eindW.p10,
+    werkelijkP50: eindW.totaalP50, // Use fixed-scenario to match chart line
+    werkelijkP90: eindW.p90,
   } : null;
 
   // Chart line configurations
@@ -194,14 +287,16 @@ export function Dashboard({
 
         {/* Outcome Card */}
         <OutcomeCard
-          forfaitair={eindF?.totaal ?? 0}
-          werkelijk={eindW?.totaal ?? 0}
+          forfaitair={mcEnabled ? eindF?.totaalP50 ?? 0 : eindF?.totaal ?? 0}
+          werkelijk={mcEnabled ? eindW?.totaalP50 ?? 0 : eindW?.totaal ?? 0}
           breakdownF={breakdownF}
           breakdownW={breakdownW}
           jaren={jaren}
           fiscaalPartner={fiscaalPartner}
           setFiscaalPartner={setFiscaalPartner}
           scenarioName={currentScenario?.name}
+          mcEnabled={mcEnabled}
+          mcUncertainty={mcUncertainty}
         />
 
         {/* Scenario Selector - Phase 1: Scenario Uncertainty */}
@@ -313,23 +408,102 @@ export function Dashboard({
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={showCumulative ? chartVermogenCumul : chartVermogenYear} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
+                  <LineChart
+                    data={
+                      mcEnabled && mcChartData
+                        ? (showCumulative ? mcChartData.vermogenCumul : mcChartData.vermogenYear)
+                        : (showCumulative ? chartVermogenCumul : chartVermogenYear)
+                    }
+                    margin={{ top: 4, right: 20, left: 4, bottom: 4 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
                     <XAxis dataKey="jaar" stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} />
                     <YAxis stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} tickFormatter={fmtK} width={72} />
                     <Tooltip {...tooltipProps} />
-                    {DET_LINES.map(({ k, c, d }) => (
-                      <Line
-                        key={k}
-                        type="monotone"
-                        dataKey={k}
-                        stroke={c}
-                        strokeWidth={2.5}
-                        strokeDasharray={d ? "5 3" : "0"}
-                        dot={false}
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                      />
-                    ))}
+
+                    {/* Monte Carlo: Show confidence bands */}
+                    {mcEnabled && mcChartData ? (
+                      <>
+                        {/* P10-P90 confidence band for Werkelijk - render as single band */}
+                        <defs>
+                          <linearGradient id="werkelijkBand" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.2} />
+                            <stop offset="100%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        {/* Band visualization using two Areas */}
+                        <Area
+                          type="monotone"
+                          dataKey="Werkelijk P90"
+                          stroke="none"
+                          fill="url(#werkelijkBand)"
+                          fillOpacity={1}
+                          isAnimationActive={false}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="Werkelijk P10"
+                          stroke="none"
+                          fill="white"
+                          fillOpacity={1}
+                          isAnimationActive={false}
+                        />
+                        {/* Median lines */}
+                        <Line
+                          type="monotone"
+                          dataKey="Forfaitair"
+                          stroke={CHART_COLORS.forfaitair}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Werkelijk P50"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                        />
+                        {/* P90 and P10 as dashed lines for clarity */}
+                        <Line
+                          type="monotone"
+                          dataKey="Werkelijk P90"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Werkelijk P10"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
+                        />
+                      </>
+                    ) : (
+                      /* Deterministic: Show regular lines */
+                      DET_LINES.map(({ k, c, d }) => (
+                        <Line
+                          key={k}
+                          type="monotone"
+                          dataKey={k}
+                          stroke={c}
+                          strokeWidth={2.5}
+                          strokeDasharray={d ? "5 3" : "0"}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      ))
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </>
@@ -364,23 +538,101 @@ export function Dashboard({
                   </div>
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={showCumulative ? chartBelCumul : chartBelYear} margin={{ top: 4, right: 20, left: 4, bottom: 4 }}>
+                  <LineChart
+                    data={
+                      mcEnabled && mcChartData
+                        ? (showCumulative ? mcChartData.belastingCumul : mcChartData.belastingYear)
+                        : (showCumulative ? chartBelCumul : chartBelYear)
+                    }
+                    margin={{ top: 4, right: 20, left: 4, bottom: 4 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke={gridLineColor} />
                     <XAxis dataKey="jaar" stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} />
                     <YAxis stroke={axisLineColor} tick={{ fill: axisTickColor, fontSize: 12 }} tickFormatter={fmtK} width={72} />
                     <Tooltip {...tooltipProps} />
-                    {BEL_LINES.map(({ k, c, d }) => (
-                      <Line
-                        key={k}
-                        type="monotone"
-                        dataKey={k}
-                        stroke={c}
-                        strokeWidth={2.5}
-                        strokeDasharray={d ? "5 3" : "0"}
-                        dot={false}
-                        activeDot={{ r: 5, strokeWidth: 0 }}
-                      />
-                    ))}
+
+                    {/* Monte Carlo: Show confidence bands */}
+                    {mcEnabled && mcChartData ? (
+                      <>
+                        {/* P10-P90 confidence band for Werkelijk */}
+                        <defs>
+                          <linearGradient id="werkelijkBandBel" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.2} />
+                            <stop offset="100%" stopColor={CHART_COLORS.werkelijk} stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <Area
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P90"
+                          stroke="none"
+                          fill="url(#werkelijkBandBel)"
+                          fillOpacity={1}
+                          isAnimationActive={false}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P10"
+                          stroke="none"
+                          fill="white"
+                          fillOpacity={1}
+                          isAnimationActive={false}
+                        />
+                        {/* Median lines */}
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Forfaitair"
+                          stroke={CHART_COLORS.forfaitair}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P50"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={2.5}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                          isAnimationActive={false}
+                        />
+                        {/* P90 and P10 as dashed lines */}
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P90"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="Belasting Werkelijk P10"
+                          stroke={CHART_COLORS.werkelijk}
+                          strokeWidth={1}
+                          strokeDasharray="3 3"
+                          dot={false}
+                          strokeOpacity={0.4}
+                          isAnimationActive={false}
+                        />
+                      </>
+                    ) : (
+                      /* Deterministic: Show regular lines */
+                      BEL_LINES.map(({ k, c, d }) => (
+                        <Line
+                          key={k}
+                          type="monotone"
+                          dataKey={k}
+                          stroke={c}
+                          strokeWidth={2.5}
+                          strokeDasharray={d ? "5 3" : "0"}
+                          dot={false}
+                          activeDot={{ r: 5, strokeWidth: 0 }}
+                        />
+                      ))
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </>
@@ -511,6 +763,7 @@ Dashboard.propTypes = {
   scenarioResults: PropTypes.object.isRequired,
   startSpaar: PropTypes.number.isRequired,
   onCustomScenarioClick: PropTypes.func.isRequired,
+  mcResults: PropTypes.object, // Optional - enabled via custom scenario modal
   handleShare: PropTypes.func.isRequired,
   showCopied: PropTypes.bool.isRequired,
   goToInfo: PropTypes.func.isRequired,

@@ -94,6 +94,8 @@ export const SCENARIOS = {
     color: 'text-purple-600 dark:text-purple-400',
     bgColor: 'bg-purple-50 dark:bg-purple-950/30',
     borderColor: 'border-purple-200 dark:border-purple-800',
+    mcEnabled: false, // Custom scenarios define their own pattern
+    volatility: { etf: 0.18, crypto: 0.50 }, // Default, but not used unless MC enabled
   },
   verwacht: {
     id: 'verwacht',
@@ -103,6 +105,8 @@ export const SCENARIOS = {
     color: 'text-blue-600 dark:text-blue-400',
     bgColor: 'bg-blue-50 dark:bg-blue-950/30',
     borderColor: 'border-blue-200 dark:border-blue-800',
+    mcEnabled: false, // MC only via modal customization
+    volatility: { etf: 0.18, crypto: 0.50 }, // Default volatility if MC enabled via modal (18% = historical S&P 500)
   },
   bull: {
     id: 'bull',
@@ -112,6 +116,8 @@ export const SCENARIOS = {
     color: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-50 dark:bg-green-950/30',
     borderColor: 'border-green-200 dark:border-green-800',
+    mcEnabled: false, // Specific pattern with consistent high returns
+    volatility: { etf: 0.12, crypto: 0.35 },
   },
   crash: {
     id: 'crash',
@@ -121,6 +127,7 @@ export const SCENARIOS = {
     color: 'text-red-600 dark:text-red-400',
     bgColor: 'bg-red-50 dark:bg-red-950/30',
     borderColor: 'border-red-200 dark:border-red-800',
+    mcEnabled: false, // Specific crash pattern
   },
   volatiel: {
     id: 'volatiel',
@@ -130,6 +137,7 @@ export const SCENARIOS = {
     color: 'text-orange-600 dark:text-orange-400',
     bgColor: 'bg-orange-50 dark:bg-orange-950/30',
     borderColor: 'border-orange-200 dark:border-orange-800',
+    mcEnabled: false, // Already demonstrates volatility
   },
   stagnatie: {
     id: 'stagnatie',
@@ -139,6 +147,8 @@ export const SCENARIOS = {
     color: 'text-amber-600 dark:text-amber-400',
     bgColor: 'bg-amber-50 dark:bg-amber-950/30',
     borderColor: 'border-amber-200 dark:border-amber-800',
+    mcEnabled: false, // Specific low-growth pattern
+    volatility: { etf: 0.08, crypto: 0.25 },
   },
 };
 

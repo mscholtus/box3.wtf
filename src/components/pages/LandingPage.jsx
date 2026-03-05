@@ -40,6 +40,28 @@ export function LandingPage({ onStartWizard, onStartWithPreset, onShowInfo, dark
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 text-center">
       <div className="max-w-xl">
+        {/* News banner */}
+        <a
+          href="https://fd.nl/politiek/1587585/heinen-gaat-wetsvoorstel-box-3-toch-aanpassen-na-verzet-senaat"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={clsx(
+            "block mb-6 px-4 py-3 rounded-xl",
+            "bg-amber-50 dark:bg-amber-900/30",
+            "border border-amber-200 dark:border-amber-700/50",
+            "text-amber-800 dark:text-amber-200",
+            "hover:bg-amber-100 dark:hover:bg-amber-900/50",
+            "transition-colors duration-150"
+          )}
+        >
+          <div className="text-sm font-medium">
+            <span className="font-bold">Nieuws:</span> Minister Heinen gaat wetsvoorstel box 3 aanpassen na verzet Eerste Kamer
+          </div>
+          <div className="text-xs mt-1 text-amber-600 dark:text-amber-300">
+            Lees meer op FD.nl →
+          </div>
+        </a>
+
         {/* Hero heading */}
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-mist-950 dark:text-mist-50 mb-5 leading-tight">
           Wat betekent het nieuwe box 3-stelsel voor jou?

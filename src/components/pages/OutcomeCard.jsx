@@ -66,6 +66,8 @@ export function OutcomeCard({
   fiscaalPartner,
   setFiscaalPartner,
   scenarioName,
+  mcEnabled = false,
+  mcUncertainty = null,
 }) {
   const [showTooltipF, setShowTooltipF] = useState(false);
   const [showTooltipW, setShowTooltipW] = useState(false);
@@ -211,6 +213,36 @@ export function OutcomeCard({
           : `Je betaalt ${fmtK(absDiff)} meer belasting onder het werkelijke stelsel.`
         }
       </div>
+
+      {/* Monte Carlo uncertainty ranges */}
+      {mcEnabled && mcUncertainty && (
+        <div className="mt-4 p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200/50 dark:border-purple-800/30">
+          <div className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-2.5">
+            📊 Onzekerheidsmarges (Monte Carlo)
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <div className="font-semibold text-forfaitair mb-1">Forfaitair</div>
+              <div className="text-mist-600 dark:text-mist-400 space-y-0.5">
+                <div>P10: {fmtK(mcUncertainty.forfaitairP10)}</div>
+                <div className="font-semibold text-mist-950 dark:text-mist-50">P50: {fmtK(mcUncertainty.forfaitairP50)}</div>
+                <div>P90: {fmtK(mcUncertainty.forfaitairP90)}</div>
+              </div>
+            </div>
+            <div>
+              <div className="font-semibold text-werkelijk mb-1">Werkelijk</div>
+              <div className="text-mist-600 dark:text-mist-400 space-y-0.5">
+                <div>P10: {fmtK(mcUncertainty.werkelijkP10)}</div>
+                <div className="font-semibold text-mist-950 dark:text-mist-50">P50: {fmtK(mcUncertainty.werkelijkP50)}</div>
+                <div>P90: {fmtK(mcUncertainty.werkelijkP90)}</div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 text-[10px] text-purple-600 dark:text-purple-400">
+            Bovenstaande waarden tonen het mediaan (P50) resultaat. P10 en P90 geven de onzekerheidsmarges aan.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -231,4 +263,13 @@ OutcomeCard.propTypes = {
   fiscaalPartner: PropTypes.bool,
   setFiscaalPartner: PropTypes.func,
   scenarioName: PropTypes.string,
+  mcEnabled: PropTypes.bool,
+  mcUncertainty: PropTypes.shape({
+    forfaitairP10: PropTypes.number,
+    forfaitairP50: PropTypes.number,
+    forfaitairP90: PropTypes.number,
+    werkelijkP10: PropTypes.number,
+    werkelijkP50: PropTypes.number,
+    werkelijkP90: PropTypes.number,
+  }),
 };
